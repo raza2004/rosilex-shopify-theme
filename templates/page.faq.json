@@ -1,0 +1,115 @@
+{
+  "sections": {
+    "intro": {
+      "type": "rich-text",
+      "settings": {
+        "eyebrow": "Help",
+        "heading": "Questions, <em>answered</em>",
+        "heading_level": "h1",
+        "text": "<p>Everything you want to know about our formulas, your order and caring for your skin. If you can't find your answer here, we're always happy to help.</p>",
+        "layout": "rich-text--offset",
+        "color_scheme": "scheme-light"
+      }
+    },
+    "products": {
+      "type": "faq",
+      "blocks": {
+        "q1": {
+          "type": "question",
+          "settings": {
+            "question": "Are your products suitable for sensitive skin?",
+            "answer": "<p>Yes. Our formulas are free from synthetic fragrance, drying alcohols and harsh preservatives. If your skin is very reactive, we recommend a patch test on the inside of your wrist for 24 hours before first use.</p>"
+          }
+        },
+        "q2": {
+          "type": "question",
+          "settings": {
+            "question": "Are your products vegan and cruelty free?",
+            "answer": "<p>All of our products are cruelty free and never tested on animals. Every formula is vegan except our balm, which contains beeswax from a small Swedish apiary.</p>"
+          }
+        },
+        "q3": {
+          "type": "question",
+          "settings": {
+            "question": "How long does a product last once opened?",
+            "answer": "<p>Because we make small batches with gentle preservation, use each product within 6 months of opening. Store it away from direct sunlight and heat.</p>"
+          }
+        },
+        "q4": {
+          "type": "question",
+          "settings": {
+            "question": "In what order should I use the ritual?",
+            "answer": "<p>Cleanse, then tone, then apply serum while your skin is still slightly damp, and seal with moisturiser. In the morning, finish with sun protection.</p>"
+          }
+        },
+        "q5": {
+          "type": "question",
+          "settings": {
+            "question": "Can I use your products during pregnancy?",
+            "answer": "<p>Our formulas contain no retinoids, but every pregnancy is different. Please share the ingredient list with your doctor or midwife before use.</p>"
+          }
+        }
+      },
+      "block_order": ["q1", "q2", "q3", "q4", "q5"],
+      "settings": {
+        "eyebrow": "Products",
+        "heading": "Formulas and <em>ingredients</em>",
+        "open_first": true,
+        "color_scheme": "scheme-light"
+      }
+    },
+    "orders": {
+      "type": "faq",
+      "blocks": {
+        "o1": {
+          "type": "question",
+          "settings": {
+            "question": "When will my order ship?",
+            "answer": "<p>Orders placed before 14:00 CET on a working day leave our studio the same day. You'll receive a tracking link as soon as your parcel is on its way.</p>"
+          }
+        },
+        "o2": {
+          "type": "question",
+          "settings": {
+            "question": "Can I change or cancel my order?",
+            "answer": "<p>Write to us within one hour of ordering and we'll do our best to change or cancel it before it's packed.</p>"
+          }
+        },
+        "o3": {
+          "type": "question",
+          "settings": {
+            "question": "Do you ship outside Europe?",
+            "answer": "<p>We currently ship across the EU, Norway, Switzerland and the United Kingdom. More destinations are coming soon.</p>"
+          }
+        },
+        "o4": {
+          "type": "question",
+          "settings": {
+            "question": "Which payment methods do you accept?",
+            "answer": "<p>All major cards, PayPal, Apple Pay and Google Pay, plus local methods such as Klarna and Swish where available.</p>"
+          }
+        }
+      },
+      "block_order": ["o1", "o2", "o3", "o4"],
+      "settings": {
+        "eyebrow": "Orders",
+        "heading": "Ordering and <em>delivery</em>",
+        "open_first": false,
+        "color_scheme": "scheme-light"
+      }
+    },
+    "help": {
+      "type": "rich-text",
+      "settings": {
+        "eyebrow": "Still curious?",
+        "heading": "Write to us, a real person <em>always</em> replies",
+        "text": "<p>Our skincare advisers answer every message within one working day.</p>",
+        "link_label": "Contact us",
+        "link": "/pages/contact",
+        "layout": "rich-text--center",
+        "color_scheme": "scheme-deep"
+      }
+    }
+  },
+  "order": ["intro", "products", "orders", "help"]
+}

@@ -1,0 +1,30 @@
+name = "rosilex-quiz"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+# Never log request bodies. Observability only records request metadata and
+# the short error messages the Worker writes (no answers, no images).
+[observability]
+enabled = true
+
+[vars]
+# Comma-separated list of storefront origins allowed to call the Worker.
+# Use your real domains, for example "https://rosexious.myshopify.com,https://www.rosilex.com".
+# rosexious.myshopify.com is the store's permanent Shopify address (it can't be renamed), so it stays.
+# http://127.0.0.1:9292 is the local `shopify theme dev` preview.
+ALLOWED_ORIGIN = "https://rosexious.myshopify.com,http://127.0.0.1:9292"
+# Gemini model. gemini-3.5-flash answered in ~2 s in testing; gemini-3.8-flash took 40-65 s.
+GEMINI_MODEL = "gemini-3.5-flash"
+# Used for one retry when the main model is overloaded (HTTP 429/5xx). ~1-2 s in testing.
+GEMINI_FALLBACK_MODEL = "gemini-3.1-flash-lite"
+
+# Rate limiting store (10 requests per 10 minutes per visitor).
+# Create it with:  npx wrangler kv namespace create RATE_LIMIT
+# then paste the returned id below.
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "e3668875bb2648a1bfe9697b2205cb89"
+
+# GEMINI_API_KEY is a secret, never put it in this file:
+#   production:  npx wrangler secret put GEMINI_API_KEY
+#   local dev:   quiz-worker/.env (git-ignored)

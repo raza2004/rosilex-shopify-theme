@@ -1,0 +1,19 @@
+# This file contains a list of files that will be excluded from Shopify CLI
+# operations such as push, pull, dev, etc.
+#
+# Examples:
+#
+# Ignore a specific file:
+#   templates/product.json
+#
+# Ignore templates with a wildcard pattern:
+#   templates/*.json
+#
+# Ignore templates and sections with a regular expression:
+#   /(templates|sections)/.*\.json/
+
+# Licensed stock photos for uploading to products in Shopify admin (not theme files)
+_stock-images/*
+
+# The quiz Cloudflare Worker is deployed separately, never uploaded with the theme
+quiz-worker/*

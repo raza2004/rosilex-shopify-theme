@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+  <head>
+    {% # Inlined CSS Variables %}
+    {% render 'css-variables' %}
+
+    {% # Load and preload the critical CSS %}
+    {{ 'critical.css' | asset_url | stylesheet_tag: preload: true }}
+
+    {% # Day / night: a saved choice wins, otherwise follow the system setting. Runs before paint. %}
+    <script>
+      try {
+        const savedTheme = localStorage.getItem('theme');
+        const night = savedTheme ? savedTheme === 'night' : matchMedia('(prefers-color-scheme: dark)').matches;
+        if (night) document.documentElement.dataset.theme = 'night';
+      } catch (error) {}
+    </script>
+
+    {% # Flags motion as allowed before first paint; motion.js clears it if it never loads. %}
+    {% # Also uncovers the page-transition curtain when arriving from a transitioned link. %}
+    <script>
+      if (matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+        const root = document.documentElement;
+        root.classList.add('motion-ok');
+        setTimeout(() => window.Motion || root.classList.remove('motion-ok'), 4000);
+
+        try {
+          if (sessionStorage.getItem('page-transition')) {
+            sessionStorage.removeItem('page-transition');
+            root.classList.add('page-arriving');
+          }
+        } catch (error) {}
+      }
+    </script>
+
+    {% # GSAP, plugins and Lenis load once here; sections never load them %}
+    <script src="{{ 'gsap.min.js' | asset_url }}" defer></script>
+    <script src="{{ 'ScrollTrigger.min.js' | asset_url }}" defer></script>
+    <script src="{{ 'SplitText.min.js' | asset_url }}" defer></script>
+    <script src="{{ 'lenis.min.js' | asset_url }}" defer></script>
+    <script src="{{ 'motion.js' | asset_url }}" defer></script>
+
+    {% # Social, title, etc. %}
+    {% render 'meta-tags' %}
+
+    {{ content_for_header }}
+  </head>
+
+  <body>
+    <div class="page-curtain" aria-hidden="true">
+      <span class="page-curtain__mark">{{ shop.name | escape }}</span>
+    </div>
+
+    {% sections 'header-group' %}
+
+    <main id="MainContent">
+      {{ content_for_layout }}
+    </main>
+
+    {% sections 'footer-group' %}
+
+    {% section 'cart-drawer' %}
+  </body>
+</html>

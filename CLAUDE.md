@@ -1,0 +1,1 @@
+D:/rozlabs/projects/skincare-theme/AGENTS.md

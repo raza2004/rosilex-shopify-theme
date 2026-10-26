@@ -1,0 +1,546 @@
+{% comment %}
+  Slide-in cart drawer. Rendered once in layout/theme.liquid with the
+  section tag, so its id is always "cart-drawer" and the
+  Section Rendering API can return fresh markup after cart changes.
+
+  Opens on the "cart:added" event (from the product form) and on clicks on
+  any [data-cart-drawer-trigger]. Uses a modal <dialog> so the page behind
+  is inert, plus an explicit Tab focus trap inside the panel.
+{% endcomment %}
+
+<cart-drawer
+  class="cart-drawer"
+  data-updated-text="{{ 'cart.updated' | t | escape }}"
+  data-error-text="{{ 'cart.error' | t | escape }}"
+>
+  <dialog class="cart-drawer__dialog" aria-labelledby="CartDrawer-Title" scroll-lock>
+    <div class="cart-drawer__overlay" data-cart-close></div>
+
+    <div class="cart-drawer__panel">
+      <header class="cart-drawer__header">
+        <h2 class="cart-drawer__title" id="CartDrawer-Title">
+          {{ 'cart.title' | t }}
+          <span class="cart-drawer__count" data-cart-count="{{ cart.item_count }}">({{ cart.item_count }})</span>
+        </h2>
+        <button type="button" class="icon-button" data-cart-close aria-label="{{ 'general.close' | t }}">
+          <svg viewBox="0 0 18 18" fill="none" aria-hidden="true" focusable="false">
+            <path d="M2 2l14 14M16 2L2 16" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+        </button>
+      </header>
+
+      <p class="visually-hidden" aria-live="polite" data-cart-status></p>
+
+      <div class="cart-drawer__content" id="CartDrawer-Content" data-item-count="{{ cart.item_count }}">
+        {% if cart.item_count > 0 %}
+          <ul class="cart-drawer__items" role="list" data-lenis-prevent>
+            {% for item in cart.items %}
+              <li class="cart-item">
+                <a class="cart-item__media" href="{{ item.url }}" tabindex="-1" aria-hidden="true">
+                  {% if item.image %}
+                    {{ item.image | image_url: width: 240 | image_tag: widths: '120, 240', sizes: '6rem', loading: 'lazy', alt: '' }}
+                  {% else %}
+                    {{ 'product-1' | placeholder_svg_tag: 'cart-item__placeholder' }}
+                  {% endif %}
+                </a>
+
+                <div class="cart-item__details">
+                  <div class="cart-item__heading">
+                    <a class="cart-item__title" href="{{ item.url }}">{{ item.product.title | escape }}</a>
+                    <p class="cart-item__price">
+                      {%- if item.original_line_price > item.final_line_price -%}
+                        <span class="visually-hidden">{{ 'products.sale_price' | t }}</span>
+                        {{ item.final_line_price | money }}
+                        <span class="visually-hidden">{{ 'products.regular_price' | t }}</span>
+                        <s class="cart-item__compare">{{ item.original_line_price | money }}</s>
+                      {%- else -%}
+                        {{ item.final_line_price | money }}
+                      {%- endif -%}
+                    </p>
+                  </div>
+
+                  {% unless item.product.has_only_default_variant %}
+                    <p class="cart-item__variant text-muted">
+                      {%- for option in item.options_with_values -%}
+                        {{ option.name | escape }}: {{ option.value | escape }}
+                        {%- unless forloop.last %} / {% endunless -%}
+                      {%- endfor -%}
+                    </p>
+                  {% endunless %}
+
+                  {% for discount in item.line_level_discount_allocations %}
+                    <p class="cart-item__discount text-muted">{{ discount.discount_application.title | escape }}</p>
+                  {% endfor %}
+
+                  <div class="cart-item__actions">
+                    <div class="quantity cart-item__quantity">
+                      <button
+                        type="button"
+                        class="quantity__step"
+                        data-line-key="{{ item.key }}"
+                        data-quantity="{{ item.quantity | minus: 1 }}"
+                        data-focus-id="{{ item.key }}-minus"
+                        aria-label="{{ 'cart.decrease' | t: title: item.product.title | escape }}"
+                      >
+                        <span aria-hidden="true">&minus;</span>
+                      </button>
+                      <span class="cart-item__quantity-value">
+                        <span class="visually-hidden">{{ 'products.quantity' | t }}</span>
+                        {{ item.quantity }}
+                      </span>
+                      <button
+                        type="button"
+                        class="quantity__step"
+                        data-line-key="{{ item.key }}"
+                        data-quantity="{{ item.quantity | plus: 1 }}"
+                        data-focus-id="{{ item.key }}-plus"
+                        aria-label="{{ 'cart.increase' | t: title: item.product.title | escape }}"
+                      >
+                        <span aria-hidden="true">+</span>
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="cart-item__remove"
+                      data-line-key="{{ item.key }}"
+                      data-quantity="0"
+                      aria-label="{{ 'cart.remove_item' | t: title: item.product.title | escape }}"
+                    >
+                      {{ 'cart.remove' | t }}
+                    </button>
+                  </div>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+
+          <footer class="cart-drawer__footer">
+            <p class="cart-drawer__error" role="alert"></p>
+
+            <div class="cart-drawer__subtotal">
+              <span>{{ 'cart.subtotal' | t }}</span>
+              <span>{{ cart.total_price | money_with_currency }}</span>
+            </div>
+            <p class="cart-drawer__note text-muted">{{ 'cart.taxes_note' | t }}</p>
+
+            <form action="{{ routes.cart_url }}" method="post" class="cart-drawer__checkout">
+              <button type="submit" name="checkout" class="button button--primary">{{ 'cart.checkout' | t }}</button>
+              <a class="cart-drawer__view-cart" href="{{ routes.cart_url }}">{{ 'cart.view_cart' | t }}</a>
+            </form>
+          </footer>
+        {% else %}
+          <div class="cart-drawer__empty">
+            <p>{{ 'cart.empty' | t }}</p>
+            <a class="button" href="{{ routes.all_products_collection_url }}">{{ 'cart.continue_shopping' | t }}</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </dialog>
+</cart-drawer>
+
+{% stylesheet %}
+  .cart-drawer__dialog {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: transparent;
+    border: 0;
+  }
+
+  .cart-drawer__dialog::backdrop {
+    background: transparent;
+  }
+
+  .cart-drawer__overlay {
+    position: absolute;
+    inset: 0;
+    background-color: color-mix(in srgb, var(--color-foreground) 32%, transparent);
+  }
+
+  .cart-drawer__panel {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    display: flex;
+    flex-direction: column;
+    width: min(28rem, 100%);
+    color: var(--color-foreground);
+    background-color: var(--color-background);
+  }
+
+  .cart-drawer__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-m) var(--space-m) var(--space-m) var(--space-l);
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .cart-drawer__title {
+    font-size: var(--text-xl);
+  }
+
+  .cart-drawer__count {
+    font-family: var(--font-body--family);
+    font-size: var(--text-s);
+    letter-spacing: 0;
+    color: var(--color-muted);
+  }
+
+  .cart-drawer__content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .cart-drawer__items {
+    flex: 1;
+    margin: 0;
+    padding: 0 var(--space-l);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    list-style: none;
+  }
+
+  .cart-item {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 1fr);
+    gap: var(--space-m);
+    padding-block: var(--space-m);
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .cart-item__media {
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    background-color: var(--color-surface);
+  }
+
+  .cart-item__media img,
+  .cart-item__placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    fill: var(--color-border);
+  }
+
+  .cart-item__details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+  }
+
+  .cart-item__heading {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-s);
+  }
+
+  .cart-item__title {
+    font-family: var(--font-display--family);
+    font-size: var(--text-l);
+    line-height: var(--leading-heading);
+    text-decoration: none;
+  }
+
+  .cart-item__price {
+    flex-shrink: 0;
+    font-size: var(--text-s);
+  }
+
+  .cart-item__compare {
+    margin-inline-start: var(--space-3xs);
+    color: var(--color-muted);
+  }
+
+  .cart-item__variant,
+  .cart-item__discount {
+    font-size: var(--text-s);
+  }
+
+  .cart-item__actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-block-start: auto;
+  }
+
+  .cart-item__quantity .quantity__step {
+    min-height: 2.5rem;
+  }
+
+  .cart-item__quantity-value {
+    min-width: 2rem;
+    text-align: center;
+    font-size: var(--text-s);
+  }
+
+  .cart-item__remove {
+    padding: var(--space-2xs) 0;
+    font: inherit;
+    font-size: var(--text-s);
+    color: var(--color-muted);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+
+  .cart-item__remove:focus-visible {
+    outline: 1px solid var(--color-foreground);
+    outline-offset: 2px;
+  }
+
+  .cart-drawer__content[aria-busy='true'] .cart-drawer__items {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .cart-drawer__footer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-m) var(--space-l) var(--space-l);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .cart-drawer__error:empty {
+    display: none;
+  }
+
+  .cart-drawer__error {
+    font-size: var(--text-s);
+  }
+
+  .cart-drawer__subtotal {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--text-l);
+  }
+
+  .cart-drawer__note {
+    font-size: var(--text-xs);
+  }
+
+  .cart-drawer__checkout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-s);
+    margin-block-start: var(--space-xs);
+  }
+
+  .cart-drawer__checkout .button {
+    width: 100%;
+  }
+
+  .cart-drawer__view-cart {
+    font-size: var(--text-s);
+  }
+
+  .cart-drawer__empty {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-m);
+    padding: var(--space-l);
+    text-align: center;
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
+
+  class CartDrawer extends HTMLElement {
+    connectedCallback() {
+      this.dialog = this.querySelector('dialog');
+      this.panel = this.querySelector('.cart-drawer__panel');
+      this.overlay = this.querySelector('.cart-drawer__overlay');
+      this.status = this.querySelector('[data-cart-status]');
+
+      // Esc: run the animated close instead of the instant native one.
+      this.dialog.addEventListener('cancel', (event) => {
+        event.preventDefault();
+        this.close();
+      });
+
+      this.dialog.addEventListener('keydown', (event) => {
+        if (event.key === 'Tab') this.trapFocus(event);
+      });
+
+      this.addEventListener('click', (event) => {
+        if (event.target.closest('[data-cart-close]')) return this.close();
+
+        const lineButton = event.target.closest('[data-line-key]');
+        if (lineButton) this.changeLine(lineButton);
+      });
+
+      this.onTriggerClick = (event) => {
+        const trigger = event.target.closest('[data-cart-drawer-trigger]');
+        if (!trigger) return;
+
+        event.preventDefault();
+        this.open(trigger);
+      };
+
+      this.onAdded = (event) => {
+        this.render(event.detail.sections?.['cart-drawer']);
+        this.open(event.detail.opener);
+      };
+
+      document.addEventListener('click', this.onTriggerClick);
+      document.addEventListener('cart:added', this.onAdded);
+    }
+
+    disconnectedCallback() {
+      document.removeEventListener('click', this.onTriggerClick);
+      document.removeEventListener('cart:added', this.onAdded);
+    }
+
+    get canAnimate() {
+      return Boolean(window.gsap) && document.documentElement.classList.contains('motion-ok');
+    }
+
+    open(opener = document.activeElement) {
+      if (this.dialog.open) return;
+
+      this.opener = opener;
+      this.dialog.showModal();
+      window.Motion?.lenis?.stop();
+
+      const { gsap } = window;
+      if (!this.canAnimate) {
+        gsap?.set([this.panel, this.overlay], { clearProps: 'all' });
+        return;
+      }
+
+      gsap.killTweensOf([this.panel, this.overlay]);
+      gsap
+        .timeline()
+        .fromTo(this.overlay, { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'power2.out' })
+        .fromTo(this.panel, { xPercent: 100 }, { xPercent: 0, duration: 0.9 }, 0)
+        .from(this.panel.querySelectorAll('.cart-item'), { opacity: 0, x: 32, stagger: 0.07, duration: 0.7 }, 0.3);
+    }
+
+    close() {
+      if (!this.dialog.open || this.closing) return;
+
+      const finish = () => {
+        this.closing = false;
+        this.dialog.close();
+        window.Motion?.lenis?.start();
+        if (this.opener?.isConnected) this.opener.focus();
+      };
+
+      if (!this.canAnimate) return finish();
+
+      this.closing = true;
+      window.gsap
+        .timeline({ onComplete: finish })
+        .to(this.panel, { xPercent: 100, duration: 0.55, ease: 'power3.in' })
+        .to(this.overlay, { opacity: 0, duration: 0.45, ease: 'power2.in' }, 0.1);
+    }
+
+    trapFocus(event) {
+      const focusable = [...this.panel.querySelectorAll(FOCUSABLE)].filter((el) => el.offsetParent !== null);
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    async changeLine(button) {
+      const content = this.querySelector('.cart-drawer__content');
+      if (content.getAttribute('aria-busy') === 'true') return;
+
+      const focusId = button.dataset.focusId;
+      content.setAttribute('aria-busy', 'true');
+
+      try {
+        const response = await fetch(`${window.Shopify.routes.root}cart/change.js`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            id: button.dataset.lineKey,
+            quantity: Number(button.dataset.quantity),
+            sections: 'cart-drawer',
+            sections_url: window.location.pathname,
+          }),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          this.showError(data.description || data.message);
+          return;
+        }
+
+        this.render(data.sections?.['cart-drawer']);
+        this.status.textContent = this.dataset.updatedText;
+        this.restoreFocus(focusId);
+      } catch {
+        this.showError(this.dataset.errorText);
+      } finally {
+        this.querySelector('.cart-drawer__content')?.removeAttribute('aria-busy');
+      }
+    }
+
+    render(sectionHtml) {
+      if (!sectionHtml) return;
+
+      const html = new DOMParser().parseFromString(sectionHtml, 'text/html');
+      const nextContent = html.getElementById('CartDrawer-Content');
+      if (!nextContent) return;
+
+      this.querySelector('.cart-drawer__content').replaceWith(nextContent);
+
+      const count = nextContent.dataset.itemCount;
+      document.querySelectorAll('[data-cart-count]').forEach((el) => {
+        el.dataset.cartCount = count;
+        el.textContent = el.closest('.cart-drawer') ? `(${count})` : count;
+      });
+    }
+
+    restoreFocus(focusId) {
+      const target =
+        (focusId && this.querySelector(`[data-focus-id="${focusId}"]`)) ||
+        this.querySelector('.cart-item [data-line-key]') ||
+        this.querySelector('[data-cart-close]');
+      target?.focus();
+    }
+
+    showError(message) {
+      const error = this.querySelector('.cart-drawer__error');
+      if (error) error.textContent = message;
+      else this.status.textContent = message;
+    }
+  }
+
+  if (!customElements.get('cart-drawer')) customElements.define('cart-drawer', CartDrawer);
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:general.cart_drawer",
+  "settings": []
+}
+{% endschema %}

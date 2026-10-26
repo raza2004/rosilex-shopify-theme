@@ -1,0 +1,373 @@
+{% comment %}
+  Site footer, set in the deep scheme: brand and newsletter, three link
+  columns (plus the merchant's footer menu when one is set), then legal links
+  and payment icons. Every built-in link resolves to a page that exists (see
+  snippets/page-url.liquid), so nothing here can 404.
+
+  Styles are scoped to .site-footer: bare element selectors would also
+  restyle the cart drawer's <footer>.
+{% endcomment %}
+
+{% liquid
+  assign menu = section.settings.menu
+  if menu == blank
+    assign menu = linklists.footer
+  endif
+
+  assign journal_url = blogs.news.url | default: routes.search_url
+%}
+
+{%- capture contact_url -%}{% render 'page-url', handle: 'contact' %}{%- endcapture -%}
+{%- capture shipping_url -%}{% render 'page-url', handle: 'shipping' %}{%- endcapture -%}
+{%- capture faq_url -%}{% render 'page-url', handle: 'faq' %}{%- endcapture -%}
+{%- capture about_url -%}{% render 'page-url', handle: 'about' %}{%- endcapture -%}
+
+<footer class="site-footer scheme-deep full-width">
+  <div class="site-footer__inner">
+    <div class="site-footer__top">
+      <div class="site-footer__brand">
+        <a class="site-footer__logo" href="{{ routes.root_url }}">{{ shop.name | escape }}</a>
+        <p class="site-footer__tagline text-muted">{{ 'footer.tagline' | t }}</p>
+        {% render 'badge', id: section.id, css_class: 'site-footer__badge' %}
+      </div>
+
+      <div class="site-footer__newsletter">
+        <h2 class="site-footer__heading">{{ 'footer.newsletter_heading' | t }}</h2>
+        <p class="text-muted">{{ 'footer.newsletter_text' | t }}</p>
+
+        {% form 'customer', class: 'newsletter', id: 'FooterNewsletter' %}
+          <input type="hidden" name="contact[tags]" value="newsletter">
+          {% if form.posted_successfully? %}
+            <p class="newsletter__status" role="status">{{ 'footer.newsletter_success' | t }}</p>
+          {% else %}
+            <div class="newsletter__field">
+              <label class="visually-hidden" for="NewsletterEmail-{{ section.id }}">{{ 'footer.newsletter_email' | t }}</label>
+              <input
+                class="newsletter__input"
+                type="email"
+                id="NewsletterEmail-{{ section.id }}"
+                name="contact[email]"
+                placeholder="{{ 'footer.newsletter_email' | t }}"
+                autocomplete="email"
+                required
+              >
+              <button type="submit" class="newsletter__submit">
+                <span class="visually-hidden">{{ 'footer.newsletter_submit' | t }}</span>
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                  <path d="M1 8h13M9 3l5 5-5 5" stroke="currentColor" stroke-width="1.2"/>
+                </svg>
+              </button>
+            </div>
+            {% if form.errors %}
+              <div class="newsletter__status" role="alert">{{ form.errors | default_errors }}</div>
+            {% endif %}
+          {% endif %}
+        {% endform %}
+      </div>
+    </div>
+
+    <nav class="site-footer__columns" aria-label="{{ 'general.footer_menu' | t }}">
+      <div class="site-footer__column">
+        <h2 class="site-footer__column-title eyebrow">{{ 'footer.shop' | t }}</h2>
+        <ul role="list">
+          <li><a class="link-sweep" href="{{ routes.all_products_collection_url }}">{{ 'footer.all_products' | t }}</a></li>
+          <li><a class="link-sweep" href="{{ routes.collections_url }}">{{ 'footer.collections' | t }}</a></li>
+          <li><a class="link-sweep" href="{{ journal_url }}">{{ 'footer.journal' | t }}</a></li>
+          <li><a class="link-sweep" href="{{ routes.search_url }}">{{ 'footer.search' | t }}</a></li>
+        </ul>
+      </div>
+
+      <div class="site-footer__column">
+        <h2 class="site-footer__column-title eyebrow">{{ 'footer.care' | t }}</h2>
+        <ul role="list">
+          <li><a class="link-sweep" href="{{ contact_url | strip }}">{{ 'footer.contact' | t }}</a></li>
+          <li><a class="link-sweep" href="{{ shipping_url | strip }}">{{ 'footer.shipping' | t }}</a></li>
+          <li><a class="link-sweep" href="{{ faq_url | strip }}">{{ 'footer.faq' | t }}</a></li>
+          {% if shop.customer_accounts_enabled %}
+            <li><a class="link-sweep" href="{{ routes.account_url }}">{{ 'general.account' | t }}</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
+      <div class="site-footer__column">
+        <h2 class="site-footer__column-title eyebrow">{{ 'footer.house' | t }}</h2>
+        <ul role="list">
+          <li><a class="link-sweep" href="{{ about_url | strip }}">{{ 'footer.about' | t }}</a></li>
+          <li><a class="link-sweep" href="{{ routes.root_url }}#ingredients">{{ 'footer.ingredients' | t }}</a></li>
+        </ul>
+      </div>
+
+      {% if section.settings.menu != blank and menu.links.size > 0 %}
+        <div class="site-footer__column">
+          <h2 class="site-footer__column-title eyebrow">{{ menu.title | escape }}</h2>
+          <ul role="list">
+            {% for link in menu.links %}
+              <li><a class="link-sweep" href="{{ link.url }}">{{ link.title | escape }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    </nav>
+
+    <div class="site-footer__meta">
+      <p class="site-footer__copyright">
+        &copy; {{ 'now' | date: '%Y' }}
+        {{ shop.name | escape }}
+      </p>
+
+      {% if shop.policies.size > 0 %}
+        <ul class="site-footer__legal" role="list" aria-label="{{ 'footer.legal' | t }}">
+          {% for policy in shop.policies %}
+            <li><a href="{{ policy.url }}">{{ policy.title | escape }}</a></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if section.settings.show_payment_icons %}
+        <ul class="site-footer__payment" role="list">
+          {% for type in shop.enabled_payment_types %}
+            <li>{{ type | payment_type_svg_tag }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  </div>
+</footer>
+
+{% stylesheet %}
+  /*
+   * The gap above the footer sits on the section wrapper, outside the deep
+   * band, so it reads as space on every page instead of more dark footer.
+   */
+  .shopify-section:has(> .site-footer) {
+    margin-block-start: var(--space-section);
+  }
+
+  .site-footer__inner {
+    display: grid;
+    gap: var(--space-2xl);
+    width: var(--content-width);
+    margin-inline: auto;
+    padding-block: var(--space-3xl) var(--space-xl);
+  }
+
+  .site-footer a {
+    color: var(--color-foreground);
+    text-decoration: none;
+  }
+
+  .site-footer__top {
+    display: grid;
+    gap: var(--space-2xl);
+  }
+
+  .site-footer__brand {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+  }
+
+  .site-footer__logo {
+    font-family: var(--font-display--family);
+    font-size: var(--text-3xl);
+    line-height: 1;
+    letter-spacing: var(--tracking-display);
+  }
+
+  .site-footer__tagline {
+    max-width: 30ch;
+  }
+
+  .site-footer__badge {
+    margin-block-start: var(--space-s);
+  }
+
+  .site-footer__newsletter {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+    max-width: 30rem;
+  }
+
+  .site-footer__heading {
+    font-size: var(--text-xl);
+  }
+
+  .newsletter__field {
+    display: flex;
+    align-items: center;
+    margin-block-start: var(--space-xs);
+    border-block-end: 1px solid var(--color-border);
+    transition: border-color var(--duration-fast) var(--ease-out);
+  }
+
+  .newsletter__field:focus-within {
+    border-block-end-color: var(--color-metal);
+  }
+
+  .newsletter__input {
+    flex: 1;
+    min-width: 0;
+    padding: var(--space-s) 0;
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .newsletter__input::placeholder {
+    color: var(--color-muted);
+  }
+
+  .newsletter__input:focus {
+    outline: none;
+  }
+
+  .newsletter__submit {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    color: inherit;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    transition: transform 0.5s var(--ease-out);
+  }
+
+  .newsletter__submit:hover {
+    transform: translateX(0.25rem);
+  }
+
+  .newsletter__submit:focus-visible,
+  .newsletter__input:focus-visible {
+    outline: 1px solid var(--color-foreground);
+    outline-offset: 2px;
+  }
+
+  .newsletter__submit svg {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+
+  .newsletter__status {
+    font-size: var(--text-s);
+  }
+
+  .site-footer__columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-xl) var(--space-l);
+    padding-block-start: var(--space-xl);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .site-footer__column ul {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
+    margin: var(--space-m) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-footer__column-title {
+    font-family: var(--font-body--family);
+    font-weight: var(--font-body--weight);
+    color: var(--color-muted);
+  }
+
+  .site-footer__meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-m);
+    padding-block-start: var(--space-l);
+    font-size: var(--text-xs);
+    color: var(--color-muted);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .site-footer__legal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2xs) var(--space-m);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-footer__legal a {
+    color: var(--color-muted);
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .site-footer__legal a:hover {
+    color: var(--color-foreground);
+  }
+
+  .site-footer__payment {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2xs);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Card logos in monochrome, so no brand colour breaks the palette. */
+  .site-footer__payment svg {
+    width: 2.5rem;
+    height: auto;
+    filter: grayscale(1);
+    opacity: 0.75;
+  }
+
+  @media screen and (min-width: 750px) {
+    .site-footer__columns {
+      grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    }
+  }
+
+  @media screen and (min-width: 990px) {
+    .site-footer__top {
+      grid-template-columns: 7fr 5fr;
+      align-items: end;
+    }
+
+    .site-footer__logo {
+      font-size: var(--text-display);
+    }
+
+    .site-footer__brand .site-footer__badge {
+      position: absolute;
+      inset-block-start: 0;
+      inset-inline-end: var(--space-xl);
+      margin: 0;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.footer",
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "t:labels.menu",
+      "info": "t:info.footer_menu"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_payment_icons",
+      "label": "t:labels.show_payment_icons",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

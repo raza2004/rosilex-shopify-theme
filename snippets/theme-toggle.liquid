@@ -1,0 +1,106 @@
+{% doc %}
+  Renders the day / night switch: two radios in a pill with a platinum thumb
+  that slides to the chosen side. Night sets html[data-theme="night"]; the
+  choice is saved in this browser. theme.liquid applies it before first paint.
+
+  @param {string} id - Unique suffix so several switches on one page keep separate radio groups
+
+  @example
+  {% render 'theme-toggle', id: 'header' %}
+{% enddoc %}
+
+<fieldset class="theme-toggle">
+  <legend class="visually-hidden">{{ 'general.theme_label' | t }}</legend>
+  <span class="theme-toggle__thumb" aria-hidden="true"></span>
+  <label class="theme-toggle__option">
+    <input class="visually-hidden" type="radio" name="theme-{{ id }}" value="day" checked>
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+      <circle cx="10" cy="10" r="3.5" stroke="currentColor" stroke-width="1.2"/>
+      <path d="M10 1.5v2.2M10 16.3v2.2M1.5 10h2.2M16.3 10h2.2M4 4l1.6 1.6M14.4 14.4 16 16M4 16l1.6-1.6M14.4 5.6 16 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+    <span class="visually-hidden">{{ 'general.theme_day' | t }}</span>
+  </label>
+  <label class="theme-toggle__option">
+    <input class="visually-hidden" type="radio" name="theme-{{ id }}" value="night">
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+      <path d="M16.5 12.4A7 7 0 0 1 7.6 3.5a7 7 0 1 0 8.9 8.9Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+    </svg>
+    <span class="visually-hidden">{{ 'general.theme_night' | t }}</span>
+  </label>
+</fieldset>
+
+{% stylesheet %}
+  .theme-toggle {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 0;
+    padding: 3px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+  }
+
+  .theme-toggle__thumb {
+    position: absolute;
+    inset-block: 3px;
+    inset-inline-start: 3px;
+    width: calc(50% - 3px);
+    border-radius: 999px;
+    background-color: var(--color-metal);
+    transition: transform 0.5s var(--ease-out);
+  }
+
+  .theme-toggle:has(input[value='night']:checked) .theme-toggle__thumb {
+    transform: translateX(100%);
+  }
+
+  .theme-toggle__option {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 1.75rem;
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .theme-toggle__option:has(:checked) {
+    color: var(--color-deep);
+  }
+
+  .theme-toggle__option:has(:focus-visible) {
+    outline: 1px solid var(--color-foreground);
+    outline-offset: 2px;
+    border-radius: 999px;
+  }
+
+  .theme-toggle__option svg {
+    width: 1rem;
+    height: 1rem;
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  // Keep every switch on the page in sync, and remember the choice.
+  (() => {
+    const root = document.documentElement;
+    const sync = () => {
+      const theme = root.dataset.theme === 'night' ? 'night' : 'day';
+      document.querySelectorAll(`.theme-toggle input[value="${theme}"]`).forEach((input) => (input.checked = true));
+    };
+
+    document.addEventListener('change', (event) => {
+      if (!event.target.matches('.theme-toggle input')) return;
+
+      root.dataset.theme = event.target.value;
+      try {
+        localStorage.setItem('theme', event.target.value);
+      } catch {}
+      sync();
+    });
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync);
+    else sync();
+  })();
+{% endjavascript %}

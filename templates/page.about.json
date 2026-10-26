@@ -1,0 +1,87 @@
+{
+  "sections": {
+    "intro": {
+      "type": "rich-text",
+      "settings": {
+        "eyebrow": "Our story",
+        "heading": "Born of long winters and <em>clean</em> northern air",
+        "heading_level": "h1",
+        "text": "<p>Rosilex began with a simple question: what does skin really need to come through a Nordic winter? The answer was fewer ingredients, chosen with more care.</p>",
+        "layout": "rich-text--offset",
+        "color_scheme": "scheme-light"
+      }
+    },
+    "beginning": {
+      "type": "image-with-text",
+      "settings": {
+        "default_image": "hero",
+        "eyebrow": "The beginning",
+        "heading": "A small kitchen, a <em>notebook</em> of recipes",
+        "text": "<p>Our first formulas were mixed in small glass jars, tested through dark Decembers and bright midsummer nights. Every recipe that made it into the collection earned its place by working, season after season.</p><p>We still make everything in small batches, so each jar reaches you fresh.</p>",
+        "image_position": "image-with-text--left",
+        "color_scheme": "scheme-light"
+      }
+    },
+    "marquee": {
+      "type": "marquee",
+      "blocks": {
+        "item_1": { "type": "item", "settings": {} },
+        "item_2": { "type": "item", "settings": {} },
+        "item_3": { "type": "item", "settings": {} },
+        "item_4": { "type": "item", "settings": {} }
+      },
+      "block_order": ["item_1", "item_2", "item_3", "item_4"],
+      "settings": { "color_scheme": "scheme-deep" }
+    },
+    "belief": {
+      "type": "image-with-text",
+      "settings": {
+        "default_image": "ingredient-2",
+        "eyebrow": "What we believe",
+        "heading": "The north already <em>knows</em> how to heal",
+        "text": "<p>Cloudberry, birch sap, sea buckthorn and lingonberry thrive where the growing season is short and fierce. That resilience is exactly what we want for your skin.</p><p>We harvest wild where we can, press cold so nothing is lost, and leave out anything that doesn't earn its place.</p>",
+        "link_label": "Meet the ingredients",
+        "link": "/#ingredients",
+        "image_position": "image-with-text--right",
+        "color_scheme": "scheme-light"
+      }
+    },
+    "promises": {
+      "type": "info-columns",
+      "blocks": {
+        "batch": {
+          "type": "column",
+          "settings": {
+            "title": "Small batches",
+            "text": "<p>Made in runs of a few hundred jars, never sitting in a warehouse for months.</p>"
+          }
+        },
+        "cold": {
+          "type": "column",
+          "settings": {
+            "title": "Cold processed",
+            "text": "<p>Oils pressed and blended without heat, so their vitamins and fatty acids stay intact.</p>"
+          }
+        },
+        "honest": {
+          "type": "column",
+          "settings": {
+            "title": "Honest formulas",
+            "text": "<p>Every ingredient listed in full. No fillers, no synthetic fragrance, nothing to hide.</p>"
+          }
+        }
+      },
+      "block_order": ["batch", "cold", "honest"],
+      "settings": {
+        "eyebrow": "Our promises",
+        "heading": "Three things we <em>never</em> compromise on",
+        "color_scheme": "scheme-light"
+      }
+    },
+    "featured": {
+      "type": "featured-collection",
+      "settings": {}
+    }
+  },
+  "order": ["intro", "beginning", "marquee", "belief", "promises", "featured"]
+}

@@ -1,0 +1,194 @@
+{% comment %}
+  A large image beside copy, offset for an asymmetric rhythm. The image
+  unmasks with a clip wipe and drifts with scroll. Until an image is picked,
+  one of the theme's own photos is used, chosen with "Default image".
+{% endcomment %}
+
+<div class="image-with-text {{ section.settings.color_scheme }} {{ section.settings.image_position }}">
+  <div class="image-with-text__media" data-motion="clip" data-parallax>
+    {% if section.settings.image %}
+      {{
+        section.settings.image
+        | image_url: width: 1800
+        | image_tag:
+          widths: '600, 900, 1200, 1800',
+          sizes: '(min-width: 990px) 55vw, 100vw',
+          loading: 'lazy'
+      }}
+    {% else %}
+      {%- liquid
+        case section.settings.default_image
+          when 'hero'
+            assign default_small = 'hero-800.jpg'
+            assign default_large = 'hero-1400.jpg'
+          else
+            assign default_small = section.settings.default_image | append: '-600.jpg'
+            assign default_large = section.settings.default_image | append: '-1000.jpg'
+        endcase
+      -%}
+      <img
+        src="{{ default_large | asset_url }}"
+        srcset="{{ default_small | asset_url }} 600w, {{ default_large | asset_url }} 1000w"
+        sizes="(min-width: 990px) 55vw, 100vw"
+        width="1000"
+        height="1333"
+        alt=""
+        loading="lazy"
+      >
+    {% endif %}
+  </div>
+
+  <div class="image-with-text__copy">
+    {% if section.settings.eyebrow != blank %}
+      <p class="eyebrow text-muted" data-motion="up">{{ section.settings.eyebrow | escape }}</p>
+    {% endif %}
+    {% if section.settings.heading != blank %}
+      <h2 class="image-with-text__heading" data-motion="lines">{{ section.settings.heading }}</h2>
+    {% endif %}
+    {% if section.settings.text != blank %}
+      <div class="rte text-muted" data-motion="up">{{ section.settings.text }}</div>
+    {% endif %}
+    {% if section.settings.link_label != blank and section.settings.link != blank %}
+      <a class="link-sweep" href="{{ section.settings.link }}" data-motion="up" data-magnetic>
+        {{- section.settings.link_label | escape -}}
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+{% stylesheet %}
+  .image-with-text {
+    display: grid;
+    gap: var(--space-xl);
+    align-items: center;
+    padding-block: var(--space-section);
+  }
+
+  .image-with-text__media {
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    background-color: var(--color-surface);
+  }
+
+  .image-with-text__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .image-with-text__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-m);
+  }
+
+  .image-with-text__heading {
+    font-size: var(--text-2xl);
+    line-height: var(--leading-heading);
+  }
+
+  @media screen and (min-width: 990px) {
+    .image-with-text {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: var(--space-l);
+    }
+
+    .image-with-text__media {
+      grid-column: 1 / span 6;
+      grid-row: 1;
+    }
+
+    .image-with-text__copy {
+      grid-column: 8 / span 5;
+      grid-row: 1;
+    }
+
+    .image-with-text--right .image-with-text__media {
+      grid-column: 7 / span 6;
+    }
+
+    .image-with-text--right .image-with-text__copy {
+      grid-column: 1 / span 5;
+    }
+
+    .image-with-text__heading {
+      font-size: var(--text-3xl);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.image_with_text",
+  "tag": "section",
+  "class": "image-with-text-section",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:labels.image"
+    },
+    {
+      "type": "select",
+      "id": "default_image",
+      "label": "t:labels.default_image",
+      "info": "t:info.default_image",
+      "options": [
+        { "value": "hero", "label": "t:options.default_image.hero" },
+        { "value": "ingredient-1", "label": "t:options.default_image.cloudberry" },
+        { "value": "ingredient-2", "label": "t:options.default_image.birch" },
+        { "value": "ingredient-3", "label": "t:options.default_image.oils" },
+        { "value": "ingredient-4", "label": "t:options.default_image.lingonberry" }
+      ],
+      "default": "hero"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:labels.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:labels.headline"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:labels.text"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "t:labels.link_label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:labels.button_link"
+    },
+    {
+      "type": "select",
+      "id": "image_position",
+      "label": "t:labels.image_position",
+      "options": [
+        { "value": "image-with-text--left", "label": "t:options.alignment.left" },
+        { "value": "image-with-text--right", "label": "t:options.alignment.right" }
+      ],
+      "default": "image-with-text--left"
+    },
+    {
+      "type": "select",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "options": [
+        { "value": "scheme-light", "label": "t:options.color_scheme.light" },
+        { "value": "scheme-deep", "label": "t:options.color_scheme.deep" }
+      ],
+      "default": "scheme-light"
+    }
+  ],
+  "presets": [{ "name": "t:general.image_with_text" }]
+}
+{% endschema %}

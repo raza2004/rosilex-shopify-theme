@@ -1,0 +1,62 @@
+{% comment %}
+  This section is used in the page template to render store pages like About us
+  or Contact us. The contact page (handle "contact", or any page using a
+  "contact" template) also gets the contact form, so it works without
+  assigning a special template in the admin.
+
+  https://shopify.dev/docs/storefronts/themes/architecture/templates/page
+{% endcomment %}
+
+{% liquid
+  assign is_contact = false
+  if page.handle == 'contact' or template.suffix == 'contact'
+    assign is_contact = true
+  endif
+%}
+
+<div class="page-section">
+  {% render 'page-header', title: page.title, eyebrow: shop.name, badge: true, id: section.id %}
+
+  {% if page.content != blank %}
+    <div class="page-content rte" data-motion="rise">
+      {{ page.content }}
+    </div>
+  {% endif %}
+
+  {% if is_contact or section.settings.show_contact_form %}
+    <div class="page-contact">
+      {% render 'contact-form', id: section.id %}
+    </div>
+  {% endif %}
+</div>
+
+{% stylesheet %}
+  .page-contact {
+    margin-block-start: var(--space-2xl);
+  }
+
+  .page-content + .page-contact {
+    margin-block-start: var(--space-3xl);
+  }
+
+  @media screen and (min-width: 990px) {
+    .page-content {
+      margin-inline-start: calc(100% / 12 * 4);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.page",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_contact_form",
+      "label": "t:labels.show_contact_form",
+      "info": "t:info.show_contact_form",
+      "default": false
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,94 @@
+{% comment %}
+  This section is used in the 404 template to render page shown when customers
+  enter an invalid store URL. The zero in "404" is the rotating badge, and the
+  fours drift gently up and down.
+
+  https://shopify.dev/docs/storefronts/themes/architecture/templates/404
+{% endcomment %}
+
+<div class="not-found page-section">
+  <div class="not-found__numerals" aria-hidden="true">
+    <span class="not-found__digit">4</span>
+    {% render 'badge', id: section.id, css_class: 'not-found__badge' %}
+    <span class="not-found__digit not-found__digit--late">4</span>
+  </div>
+
+  <div class="not-found__copy">
+    <p class="eyebrow text-muted" data-motion="up">{{ '404.title' | t }}</p>
+    <h1 class="not-found__title" data-motion="lines">{{ '404.not_found' | t }}</h1>
+    <p class="text-muted measure" data-motion="up">{{ '404.intro' | t }}</p>
+    <div data-motion="up">
+      <a class="button button--primary" href="{{ routes.all_products_collection_url }}" data-magnetic>
+        {{- '404.back_to_shopping' | t -}}
+      </a>
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .not-found {
+    display: grid;
+    gap: var(--space-2xl);
+    align-items: center;
+    min-height: 80svh;
+    padding-block-start: var(--space-2xl);
+  }
+
+  .not-found__numerals {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-s);
+    font-family: var(--font-display--family);
+    font-size: clamp(7rem, 22vw, 18rem);
+    line-height: 1;
+    letter-spacing: var(--tracking-display);
+  }
+
+  .not-found__digit {
+    display: inline-block;
+    animation: not-found-float 6s ease-in-out infinite;
+  }
+
+  .not-found__digit--late {
+    animation-delay: -3s;
+  }
+
+  .not-found__badge {
+    width: 0.8em;
+  }
+
+  .not-found__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-m);
+  }
+
+  .not-found__title {
+    font-size: var(--text-3xl);
+  }
+
+  @keyframes not-found-float {
+    0%,
+    100% {
+      transform: translateY(-4%);
+    }
+    50% {
+      transform: translateY(4%);
+    }
+  }
+
+  @media screen and (min-width: 990px) {
+    .not-found {
+      grid-template-columns: 6fr 5fr;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.404",
+  "settings": []
+}
+{% endschema %}

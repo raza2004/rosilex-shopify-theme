@@ -1,0 +1,100 @@
+{
+  "sections": {
+    "intro": {
+      "type": "rich-text",
+      "settings": {
+        "eyebrow": "Care",
+        "heading": "Shipping and <em>returns</em>",
+        "heading_level": "h1",
+        "text": "<p>Every order is packed by hand in our studio, wrapped in recyclable paper and sent with tracking. If something isn't right, we make it right.</p>",
+        "layout": "rich-text--offset",
+        "color_scheme": "scheme-light"
+      }
+    },
+    "overview": {
+      "type": "info-columns",
+      "blocks": {
+        "delivery": {
+          "type": "column",
+          "settings": {
+            "title": "Delivery",
+            "text": "<p>Free standard delivery on orders over €60. Nordic countries in 1 to 3 working days, the rest of Europe in 2 to 5.</p>"
+          }
+        },
+        "returns": {
+          "type": "column",
+          "settings": {
+            "title": "Returns",
+            "text": "<p>Return unopened products within 30 days for a full refund. Opened and not right for your skin? Tell us, and we'll find a solution.</p>"
+          }
+        },
+        "packaging": {
+          "type": "column",
+          "settings": {
+            "title": "Packaging",
+            "text": "<p>Glass jars, aluminium caps and paper wrapping, all recyclable. No plastic fillers, ever.</p>"
+          }
+        }
+      },
+      "block_order": ["delivery", "returns", "packaging"],
+      "settings": {
+        "eyebrow": "At a glance",
+        "heading": "How your ritual <em>reaches</em> you",
+        "color_scheme": "scheme-light"
+      }
+    },
+    "details": {
+      "type": "faq",
+      "blocks": {
+        "s1": {
+          "type": "question",
+          "settings": {
+            "question": "How much does shipping cost?",
+            "answer": "<p>Standard delivery is €4.90 and free on orders over €60. Express delivery to the Nordic countries is €9.90 and arrives the next working day when ordered before 14:00 CET.</p>"
+          }
+        },
+        "s2": {
+          "type": "question",
+          "settings": {
+            "question": "How do I return a product?",
+            "answer": "<p>Contact us with your order number and we'll send you a prepaid return label. Once your parcel arrives, your refund is processed within 5 working days.</p>"
+          }
+        },
+        "s3": {
+          "type": "question",
+          "settings": {
+            "question": "My order arrived damaged. What now?",
+            "answer": "<p>We're sorry. Send us a photo of the damaged item within 7 days and we'll ship a replacement straight away, at no cost to you.</p>"
+          }
+        },
+        "s4": {
+          "type": "question",
+          "settings": {
+            "question": "Will I pay customs or import fees?",
+            "answer": "<p>Not within the EU. For Norway, Switzerland and the United Kingdom, any local duties are calculated and shown at checkout, so there are no surprises on delivery.</p>"
+          }
+        }
+      },
+      "block_order": ["s1", "s2", "s3", "s4"],
+      "settings": {
+        "eyebrow": "Details",
+        "heading": "The <em>finer</em> points",
+        "open_first": true,
+        "color_scheme": "scheme-light"
+      }
+    },
+    "help": {
+      "type": "rich-text",
+      "settings": {
+        "eyebrow": "Need a hand?",
+        "heading": "Questions about an <em>order</em>?",
+        "text": "<p>Have your order number ready and we'll take care of the rest.</p>",
+        "link_label": "Contact us",
+        "link": "/pages/contact",
+        "layout": "rich-text--center",
+        "color_scheme": "scheme-deep"
+      }
+    }
+  },
+  "order": ["intro", "overview", "details", "help"]
+}

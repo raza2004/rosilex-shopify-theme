@@ -1,0 +1,297 @@
+{% doc %}
+  Renders the language dropdown: a pill showing the current language that
+  opens a list of every language the theme is translated into.
+
+  Languages published in Shopify (Settings > Languages) are links to the same
+  page under that language's URL (/sv/..., /de/...), which work without JS.
+  Languages the theme supports but that are not published yet stay visible,
+  greyed out with a "coming soon" tag, so the list is always complete.
+
+  @param {string} id - Unique suffix for element ids when rendered more than once
+  @param {string} [placement] - 'up' to open the list above the button (for the mobile menu)
+
+  @example
+  {% render 'language-selector', id: 'header' %}
+  {% render 'language-selector', id: 'mobile', placement: 'up' %}
+{% enddoc %}
+
+{%- liquid
+  # Languages the theme ships locale files for, in display order:
+  # English first, then alphabetical by each language's own name
+  # Norwegian is published by Shopify under "no" (locales/no.json; nb.json covers Bokmål stores)
+  assign supported_codes = 'en,cs,de,es,fr,it,nl,no,pl,pt-PT,ro,sv' | split: ','
+  assign published_codes = localization.available_languages | map: 'iso_code'
+  assign current_code = localization.language.iso_code
+
+  assign current_key = 'general.language_' | append: current_code | downcase | replace: '-', '_'
+  if supported_codes contains current_code
+    assign current_label = current_key | t
+  else
+    assign current_label = localization.language.endonym_name | capitalize
+  endif
+  assign current_short = current_code | split: '-' | first | upcase
+
+  # The current page without its language prefix, so each link keeps the
+  # visitor on the same page: /sv/products/x -> /products/x -> /de/products/x
+  assign current_root = localization.language.root_url
+  assign page_path = request.path
+  if current_root != '/'
+    assign page_path = page_path | remove_first: current_root
+  endif
+  if page_path == blank
+    assign page_path = '/'
+  endif
+-%}
+
+<div class="language-selector{% if placement == 'up' %} language-selector--up{% endif %}" data-language-selector>
+  <nav class="language-selector__nav" aria-label="{{ 'general.language' | t }}">
+    <button
+      type="button"
+      class="language-selector__trigger"
+      aria-expanded="false"
+      aria-controls="LanguageList-{{ id }}"
+      data-language-trigger
+    >
+      <svg class="language-selector__globe" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+        <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.1"/>
+        <path d="M2.5 10h15M10 2.5c2.2 2.1 3.3 4.6 3.3 7.5s-1.1 5.4-3.3 7.5c-2.2-2.1-3.3-4.6-3.3-7.5s1.1-5.4 3.3-7.5Z" stroke="currentColor" stroke-width="1.1"/>
+      </svg>
+      <span class="visually-hidden">{{ 'general.language' | t }}:</span>
+      <span class="language-selector__current" aria-hidden="true">{{ current_short }}</span>
+      <span class="visually-hidden">{{ current_label }}</span>
+      <svg class="language-selector__chevron" viewBox="0 0 12 12" fill="none" aria-hidden="true" focusable="false">
+        <path d="M2.5 4.5 6 8l3.5-3.5" stroke="currentColor" stroke-width="1.1"/>
+      </svg>
+    </button>
+
+    <ul class="language-selector__list" id="LanguageList-{{ id }}" role="list">
+      {% for code in supported_codes %}
+        {%- liquid
+          assign label_key = 'general.language_' | append: code | downcase | replace: '-', '_'
+          assign label = label_key | t
+        -%}
+        <li>
+          {% if code == current_code %}
+            <span class="language-selector__option language-selector__option--current" lang="{{ code }}" aria-current="true">
+              {{- label -}}
+            </span>
+          {% elsif published_codes contains code %}
+            {%- liquid
+              assign target_language = localization.available_languages | where: 'iso_code', code | first
+              assign target_url = page_path
+              if target_language.root_url != '/'
+                assign target_url = target_language.root_url | append: page_path
+                if page_path == '/'
+                  assign target_url = target_language.root_url
+                endif
+              endif
+            -%}
+            <a class="language-selector__option" href="{{ target_url }}" hreflang="{{ code }}" lang="{{ code }}">
+              {{- label -}}
+            </a>
+          {% else %}
+            <span class="language-selector__option language-selector__option--soon" lang="{{ code }}">
+              {{- label -}}
+              <span class="language-selector__soon">{{ 'general.language_unavailable' | t }}</span>
+            </span>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </nav>
+</div>
+
+{% stylesheet %}
+  .language-selector {
+    position: relative;
+  }
+
+  .language-selector__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    min-height: 2.25rem;
+    padding: 0 var(--space-xs) 0 var(--space-s);
+    font: inherit;
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-eyebrow);
+    color: var(--color-foreground);
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out);
+  }
+
+  .language-selector__trigger:hover,
+  .language-selector__trigger[aria-expanded='true'] {
+    border-color: var(--color-metal);
+  }
+
+  .language-selector__trigger:focus-visible {
+    outline: 1px solid var(--color-foreground);
+    outline-offset: 2px;
+  }
+
+  .language-selector__globe {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .language-selector__chevron {
+    width: 0.75rem;
+    height: 0.75rem;
+    transition: transform 0.4s var(--ease-out);
+  }
+
+  .language-selector__trigger[aria-expanded='true'] .language-selector__chevron {
+    transform: rotate(180deg);
+  }
+
+  /* The panel fades and drifts in; visibility keeps it out of the tab order when closed. */
+  .language-selector__list {
+    position: absolute;
+    inset-block-start: calc(100% + var(--space-2xs));
+    inset-inline-end: 0;
+    z-index: 20;
+    min-width: 14rem;
+    margin: 0;
+    padding: var(--space-2xs);
+    list-style: none;
+    color: var(--color-foreground);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-0.5rem);
+    transition:
+      opacity 0.35s var(--ease-out),
+      transform 0.45s var(--ease-out),
+      visibility 0s linear 0.45s;
+  }
+
+  .language-selector--up .language-selector__list {
+    inset-block: auto calc(100% + var(--space-2xs));
+    inset-inline: 0 auto;
+    transform: translateY(0.5rem);
+  }
+
+  .language-selector.is-open .language-selector__list {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+      opacity 0.35s var(--ease-out),
+      transform 0.45s var(--ease-out),
+      visibility 0s;
+  }
+
+  .language-selector__option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-s);
+    width: 100%;
+    min-height: 2.5rem;
+    padding: 0 var(--space-s);
+    font: inherit;
+    font-size: var(--text-s);
+    text-align: start;
+    color: inherit;
+    background: none;
+    border: 0;
+    border-radius: 0.6rem;
+  }
+
+  a.language-selector__option {
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out);
+  }
+
+  a.language-selector__option:hover,
+  a.language-selector__option:focus-visible {
+    background-color: var(--color-surface);
+    outline: none;
+  }
+
+  .language-selector__option--current::after {
+    content: '';
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background-color: var(--color-metal);
+  }
+
+  .language-selector__option--soon {
+    color: var(--color-muted);
+  }
+
+  .language-selector__soon {
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    opacity: 0.8;
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  // Open/close, outside click, Esc, and arrow keys between the options.
+  (() => {
+    const close = (selector, returnFocus) => {
+      selector.classList.remove('is-open');
+      const trigger = selector.querySelector('[data-language-trigger]');
+      trigger.setAttribute('aria-expanded', 'false');
+      if (returnFocus) trigger.focus();
+    };
+
+    const closeAll = (except) => {
+      document.querySelectorAll('[data-language-selector].is-open').forEach((s) => s !== except && close(s, false));
+    };
+
+    document.addEventListener('click', (event) => {
+      const trigger = event.target.closest('[data-language-trigger]');
+      const selector = event.target.closest('[data-language-selector]');
+
+      if (trigger) {
+        const isOpen = selector.classList.toggle('is-open');
+        trigger.setAttribute('aria-expanded', String(isOpen));
+        closeAll(selector);
+        if (isOpen) selector.querySelector('a.language-selector__option')?.focus();
+        return;
+      }
+
+      if (!selector) closeAll();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      const selector = event.target.closest?.('[data-language-selector].is-open');
+      if (!selector) return;
+
+      if (event.key === 'Escape') {
+        // Close only the dropdown, not a dialog (mobile menu) around it.
+        event.preventDefault();
+        event.stopPropagation();
+        close(selector, true);
+        return;
+      }
+
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+
+      const options = [...selector.querySelectorAll('a.language-selector__option')];
+      if (!options.length) return;
+
+      event.preventDefault();
+      const index = options.indexOf(document.activeElement);
+      const step = event.key === 'ArrowDown' ? 1 : -1;
+      options[(index + step + options.length) % options.length].focus();
+    });
+
+    // Tabbing out of an open dropdown closes it.
+    document.addEventListener('focusin', (event) => {
+      document.querySelectorAll('[data-language-selector].is-open').forEach((selector) => {
+        if (!selector.contains(event.target)) close(selector, false);
+      });
+    });
+  })();
+{% endjavascript %}

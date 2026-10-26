@@ -1,0 +1,75 @@
+{% doc %}
+  Renders a typographic cover for a product that has no photos yet: the
+  product name in display italic on the warm surface, with a sage disc
+  drifting slowly behind it. Decorative, since the name is always shown
+  elsewhere on the card or page.
+
+  @param {string} [title] - The product title. The shop name prefix is dropped.
+  @param {string} [css_class] - Optional class added to the cover
+
+  @example
+  {% render 'product-cover', title: product.title, css_class: 'product-card__image' %}
+{% enddoc %}
+
+{%- liquid
+  assign cover_title = title
+  if title == blank
+    assign cover_title = 'products.placeholder_title' | t
+  endif
+
+  # "Rosilex Daily Serum" reads better on the cover as "Daily Serum"
+  assign short_title = cover_title | remove_first: shop.name | strip
+  if short_title == blank
+    assign short_title = cover_title
+  endif
+-%}
+
+<div class="product-cover {{ css_class }}" aria-hidden="true">
+  <span class="product-cover__disc"></span>
+  <span class="product-cover__title">{{ short_title | escape }}</span>
+</div>
+
+{% stylesheet %}
+  .product-cover {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    padding: var(--space-l);
+    background-color: var(--color-surface);
+  }
+
+  .product-cover__disc {
+    position: absolute;
+    width: 55%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background-color: var(--color-aurora);
+    opacity: 0.38;
+    filter: blur(28px);
+    animation: product-cover-drift 14s ease-in-out infinite;
+  }
+
+  .product-cover__title {
+    position: relative;
+    max-width: 12ch;
+    font-family: var(--font-display--family);
+    font-size: clamp(1.75rem, 4vw, 3rem);
+    font-style: italic;
+    line-height: var(--leading-heading);
+    text-align: center;
+    color: var(--color-foreground);
+  }
+
+  @keyframes product-cover-drift {
+    0%,
+    100% {
+      transform: translate(-12%, -8%) scale(1);
+    }
+    50% {
+      transform: translate(12%, 10%) scale(1.15);
+    }
+  }
+{% endstylesheet %}

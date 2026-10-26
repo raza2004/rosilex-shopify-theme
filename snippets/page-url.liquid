@@ -1,0 +1,25 @@
+{% doc %}
+  Outputs the URL for a store page by handle, and never a URL that 404s.
+
+  If the page exists in Shopify (Online Store > Pages), its own URL is used.
+  If not, it falls back to the contact page rendered with the alternate
+  template of the same name (/pages/contact?view=about uses
+  templates/page.about.json), so the theme's built-in pages work before
+  anyone creates them in the admin.
+
+  @param {string} handle - The page handle: about, faq or shipping
+
+  @example
+  <a href="{% render 'page-url', handle: 'about' %}">Our story</a>
+{% enddoc %}
+
+{%- liquid
+  assign target_page = pages[handle]
+  if target_page.url != blank
+    echo target_page.url
+  elsif pages.contact.url != blank
+    echo pages.contact.url | append: '?view=' | append: handle
+  else
+    echo routes.root_url
+  endif
+-%}

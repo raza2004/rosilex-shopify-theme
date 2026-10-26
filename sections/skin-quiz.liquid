@@ -1,0 +1,1035 @@
+{% comment %}
+  AI skin quiz. Five questions and an optional photo are sent to the quiz
+  Cloudflare Worker (quiz-worker/), which asks Gemini for three products from
+  this store and falls back to tag-based rules if Gemini is unavailable.
+
+  Privacy: the photo is resized and re-encoded in the browser (which also
+  strips EXIF data such as location) and only sent after explicit consent.
+  The Worker never stores or logs it.
+
+  Product cards for the picks are rendered here in <template> tags and cloned
+  into the results, so prices, images and links match the rest of the store.
+{% endcomment %}
+
+{% liquid
+  assign source_collection = section.settings.collection | default: collections.all
+  assign candidates = source_collection.products | reject: 'gift_card?'
+
+  # Leave out non-skincare product types (e.g. "accessories"), compared case-insensitively.
+  assign excluded_types = section.settings.exclude_types | downcase | split: ','
+  assign kept_handles = ''
+  for product in candidates limit: 50
+    assign product_type = product.type | downcase | strip
+    if product_type != blank
+      assign is_excluded = false
+      for excluded in excluded_types
+        assign excluded_type = excluded | strip
+        if excluded_type != blank and excluded_type == product_type
+          assign is_excluded = true
+        endif
+      endfor
+      if is_excluded
+        continue
+      endif
+    endif
+    assign kept_handles = kept_handles | append: product.handle | append: ','
+  endfor
+  assign kept_handle_list = kept_handles | split: ','
+
+  assign quiz_language = 'en'
+  if request.locale.iso_code == 'sv'
+    assign quiz_language = 'sv'
+  endif
+
+  assign default_eyebrow = 'quiz.eyebrow' | t
+  assign default_heading = 'quiz.heading_html' | t
+  assign default_text = 'quiz.text_html' | t
+  assign eyebrow = section.settings.eyebrow | default: default_eyebrow
+  assign heading = section.settings.heading | default: default_heading
+  assign text = section.settings.text | default: default_text
+
+  assign endpoint = section.settings.worker_url | strip
+  if endpoint != blank
+    unless endpoint contains '/recommend'
+      assign endpoint = endpoint | remove_last: '/' | append: '/recommend'
+    endunless
+  endif
+%}
+
+{% if endpoint == blank or kept_handle_list.size < 3 %}
+  {% if request.design_mode %}
+    <div class="skin-quiz-setup">
+      {% if endpoint == blank %}
+        <p>{{ 'quiz.setup_worker' | t }}</p>
+      {% else %}
+        <p>{{ 'quiz.not_enough_products' | t }}</p>
+      {% endif %}
+    </div>
+  {% endif %}
+{% else %}
+  <skin-quiz
+    id="skin-quiz"
+    class="skin-quiz {{ section.settings.color_scheme }} full-width"
+    data-endpoint="{{ endpoint | escape }}"
+    data-language="{{ quiz_language }}"
+    data-step-template="{{ 'quiz.step' | t: current: '#current', total: '#total' | escape }}"
+    data-error-text="{{ 'quiz.error' | t | escape }}"
+    data-rate-text="{{ 'quiz.rate_limited' | t | escape }}"
+    data-photo-invalid="{{ 'quiz.photo_invalid' | t | escape }}"
+    data-consent-required="{{ 'quiz.photo_consent_required' | t | escape }}"
+  >
+    <script type="application/json" data-quiz-products>
+      [
+        {%- assign first_product = true -%}
+        {%- for product in candidates limit: 50 -%}
+          {%- unless kept_handle_list contains product.handle -%}{%- continue -%}{%- endunless -%}
+          {%- unless first_product -%},{%- endunless -%}
+          {%- assign first_product = false -%}
+          {%- comment -%} The product type travels as an extra tag: most products here have no tags. {%- endcomment -%}
+          {%- assign product_type_list = product.type | split: '|' -%}
+          {
+            "handle": {{ product.handle | json }},
+            "title": {{ product.title | json }},
+            "description": {{ product.description | strip_html | strip_newlines | truncate: 300 | json }},
+            "tags": {{ product.tags | concat: product_type_list | json }}
+          }
+        {%- endfor -%}
+      ]
+    </script>
+
+    {% for product in candidates limit: 50 %}
+      {%- unless kept_handle_list contains product.handle -%}{%- continue -%}{%- endunless -%}
+      <template data-quiz-card="{{ product.handle | escape }}">
+        {% render 'product-card', product: product, sizes: '(min-width: 990px) 30vw, 80vw' %}
+      </template>
+    {% endfor %}
+
+    <div class="skin-quiz__aurora" aria-hidden="true">
+      <span class="skin-quiz__orb skin-quiz__orb--amethyst"></span>
+      <span class="skin-quiz__orb skin-quiz__orb--periwinkle"></span>
+    </div>
+
+    <div class="skin-quiz__inner">
+      {% comment %} Intro {% endcomment %}
+      <div class="skin-quiz__panel skin-quiz__intro" data-quiz-panel="intro">
+        <p class="eyebrow skin-quiz__eyebrow">
+          <span class="skin-quiz__spark" aria-hidden="true"></span>
+          {{ eyebrow | escape }}
+        </p>
+        <h2 class="skin-quiz__heading" data-motion="lines">{{ heading }}</h2>
+        <div class="skin-quiz__lead text-muted">{{ text }}</div>
+        <ul class="skin-quiz__facts" role="list">
+          <li>{{ 'quiz.fact_questions' | t }}</li>
+          {% if section.settings.enable_photo %}
+            <li>{{ 'quiz.fact_photo' | t }}</li>
+          {% endif %}
+          <li>{{ 'quiz.fact_picks' | t }}</li>
+        </ul>
+        <div>
+          <button type="button" class="button button--primary" data-action="start" data-magnetic>
+            {{- 'quiz.start' | t -}}
+          </button>
+        </div>
+      </div>
+
+      {% comment %} Questions {% endcomment %}
+      <form class="skin-quiz__form" data-quiz-form novalidate>
+        <div class="skin-quiz__progress" data-quiz-progress hidden>
+          <p class="eyebrow text-muted" data-quiz-step-label aria-live="polite"></p>
+          <span class="skin-quiz__bar" aria-hidden="true"><span class="skin-quiz__bar-fill" data-quiz-bar></span></span>
+        </div>
+
+        {%- liquid
+          assign q_names = 'skinType,mainConcern,sensitivity,routineLength,climate' | split: ','
+          assign q_options = 'dry:opt_dry|oily:opt_oily|combination:opt_combination|normal:opt_normal|sensitive:opt_sensitive;dryness:opt_dryness|dullness:opt_dullness|breakouts:opt_breakouts|redness:opt_redness|fine lines:opt_fine_lines|pores:opt_pores;low:opt_low|medium:opt_medium|high:opt_high;short:opt_short|standard:opt_standard|full:opt_full;cold:opt_cold|dry:opt_dry_climate|humid:opt_humid|mild:opt_mild' | split: ';'
+          assign q_keys = 'q_skin_type,q_concern,q_sensitivity,q_routine,q_climate' | split: ','
+        -%}
+
+        {% for name in q_names %}
+          {%- assign i = forloop.index0 -%}
+          {%- assign question_key = 'quiz.' | append: q_keys[i] -%}
+          <fieldset class="skin-quiz__panel skin-quiz__question" data-quiz-panel="q{{ forloop.index }}" hidden>
+            <legend class="skin-quiz__question-title">{{ question_key | t }}</legend>
+            <div class="skin-quiz__options">
+              {% assign options = q_options[i] | split: '|' %}
+              {% for option in options %}
+                {%- liquid
+                  assign parts = option | split: ':'
+                  assign option_value = parts[0]
+                  assign option_key = 'quiz.' | append: parts[1]
+                -%}
+                <label class="skin-quiz__option">
+                  <input class="visually-hidden" type="radio" name="{{ name }}" value="{{ option_value }}" required>
+                  <span>{{ option_key | t }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <div class="skin-quiz__nav">
+              <button type="button" class="skin-quiz__back link-sweep" data-action="back">{{ 'quiz.back' | t }}</button>
+              <button type="button" class="button button--primary" data-action="next" disabled>{{ 'quiz.next' | t }}</button>
+            </div>
+          </fieldset>
+        {% endfor %}
+
+        {% comment %} Optional photo {% endcomment %}
+        {% if section.settings.enable_photo %}
+          <fieldset class="skin-quiz__panel skin-quiz__photo" data-quiz-panel="photo" hidden>
+            <legend class="skin-quiz__question-title">{{ 'quiz.photo_heading' | t }}</legend>
+            <p class="text-muted measure">{{ 'quiz.photo_text' | t }}</p>
+
+            <div class="skin-quiz__photo-row">
+              <label class="skin-quiz__dropzone" data-quiz-dropzone>
+                <input class="visually-hidden" type="file" accept="image/jpeg,image/png" data-quiz-file>
+                <img class="skin-quiz__preview" alt="" width="512" height="512" data-quiz-preview hidden>
+                <span class="skin-quiz__dropzone-text" data-quiz-drop-text>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                    <rect x="3" y="6" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.2"/>
+                    <circle cx="12" cy="13" r="3.5" stroke="currentColor" stroke-width="1.2"/>
+                    <path d="M8.5 6 10 4h4l1.5 2" stroke="currentColor" stroke-width="1.2"/>
+                  </svg>
+                  {{ 'quiz.photo_choose' | t }}
+                </span>
+              </label>
+
+              <div class="skin-quiz__photo-side">
+                <label class="skin-quiz__consent">
+                  <input type="checkbox" data-quiz-consent>
+                  <span>{{ 'quiz.photo_consent' | t }}</span>
+                </label>
+                <button type="button" class="skin-quiz__back link-sweep" data-action="remove-photo" hidden>
+                  {{- 'quiz.photo_remove' | t -}}
+                </button>
+                <p class="skin-quiz__message" role="alert" data-quiz-photo-message></p>
+              </div>
+            </div>
+
+            <div class="skin-quiz__nav">
+              <button type="button" class="skin-quiz__back link-sweep" data-action="back">{{ 'quiz.back' | t }}</button>
+              <div class="skin-quiz__nav-end">
+                <button type="button" class="link-sweep" data-action="skip-photo">{{ 'quiz.photo_skip' | t }}</button>
+                <button type="button" class="button button--primary" data-action="submit" data-magnetic>{{ 'quiz.submit' | t }}</button>
+              </div>
+            </div>
+          </fieldset>
+        {% endif %}
+      </form>
+
+      {% comment %} Loading {% endcomment %}
+      <div class="skin-quiz__panel skin-quiz__loading" data-quiz-panel="loading" hidden>
+        <span class="skin-quiz__pulse" aria-hidden="true"></span>
+        <p class="skin-quiz__question-title" role="status">{{ 'quiz.loading' | t }}</p>
+      </div>
+
+      {% comment %} Error {% endcomment %}
+      <div class="skin-quiz__panel skin-quiz__error" data-quiz-panel="error" hidden>
+        <p class="skin-quiz__question-title" role="alert" data-quiz-error></p>
+        <div class="skin-quiz__nav">
+          <button type="button" class="skin-quiz__back link-sweep" data-action="restart">{{ 'quiz.restart' | t }}</button>
+          <button type="button" class="button button--primary" data-action="submit">{{ 'quiz.retry' | t }}</button>
+        </div>
+      </div>
+
+      {% comment %} Results {% endcomment %}
+      <div class="skin-quiz__panel skin-quiz__results" data-quiz-panel="results" hidden>
+        <div class="skin-quiz__results-head">
+          <p class="eyebrow skin-quiz__eyebrow">
+            <span class="skin-quiz__spark" aria-hidden="true"></span>
+            {{ 'quiz.results_eyebrow' | t }}
+          </p>
+          <h2 class="skin-quiz__heading" tabindex="-1" data-quiz-results-heading>{{ 'quiz.results_heading_html' | t }}</h2>
+        </div>
+
+        <div class="skin-quiz__notes">
+          <div class="skin-quiz__note" data-quiz-observations-block hidden>
+            <h3 class="eyebrow text-muted">{{ 'quiz.observations' | t }}</h3>
+            <ul class="skin-quiz__observations" role="list" data-quiz-observations></ul>
+          </div>
+          <div class="skin-quiz__note">
+            <h3 class="eyebrow text-muted">{{ 'quiz.routine_tip' | t }}</h3>
+            <p class="skin-quiz__tip" data-quiz-tip></p>
+          </div>
+        </div>
+
+        <ol class="skin-quiz__picks" role="list" data-quiz-picks></ol>
+
+        <div class="skin-quiz__footer">
+          <p class="skin-quiz__disclaimer text-muted">{{ 'quiz.disclaimer' | t }}</p>
+          <button type="button" class="link-sweep" data-action="restart">{{ 'quiz.restart' | t }}</button>
+        </div>
+      </div>
+    </div>
+  </skin-quiz>
+{% endif %}
+
+{% stylesheet %}
+  .skin-quiz {
+    position: relative;
+    display: block;
+    overflow: clip;
+    padding-block: var(--space-section);
+  }
+
+  .skin-quiz__inner {
+    position: relative;
+    width: var(--content-width);
+    margin-inline: auto;
+  }
+
+  .skin-quiz__aurora {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .skin-quiz__orb {
+    position: absolute;
+    width: 40vmax;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    filter: blur(100px);
+    animation: skin-quiz-drift 26s ease-in-out infinite;
+  }
+
+  .skin-quiz__orb--amethyst {
+    inset-block-start: -20%;
+    inset-inline-end: -10%;
+    background-color: var(--color-aurora);
+    opacity: 0.3;
+  }
+
+  .skin-quiz__orb--periwinkle {
+    inset-block-end: -25%;
+    inset-inline-start: -10%;
+    background-color: var(--color-metal);
+    opacity: 0.2;
+    animation-delay: -12s;
+  }
+
+  .scheme-light .skin-quiz__orb {
+    opacity: 0.16;
+  }
+
+  @keyframes skin-quiz-drift {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(-10%, 8%) scale(1.12);
+    }
+  }
+
+  .skin-quiz__panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-l);
+    max-width: 52rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .skin-quiz__panel[hidden] {
+    display: none;
+  }
+
+  .skin-quiz__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
+  /* A small four-point star: the AI mark. */
+  .skin-quiz__spark {
+    width: 0.8rem;
+    height: 0.8rem;
+    background-color: var(--color-metal);
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+    animation: skin-quiz-twinkle 3s ease-in-out infinite;
+  }
+
+  @keyframes skin-quiz-twinkle {
+    0%,
+    100% {
+      transform: scale(1) rotate(0deg);
+    }
+    50% {
+      transform: scale(1.3) rotate(45deg);
+    }
+  }
+
+  .skin-quiz__heading {
+    font-size: var(--text-3xl);
+    line-height: var(--leading-heading);
+  }
+
+  .skin-quiz__lead {
+    max-width: var(--measure);
+    font-size: var(--text-l);
+  }
+
+  .skin-quiz__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2xs) var(--space-l);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-s);
+    color: var(--color-muted);
+  }
+
+  .skin-quiz__facts li::before {
+    content: '';
+    display: inline-block;
+    width: 0.35rem;
+    height: 0.35rem;
+    margin-inline-end: var(--space-xs);
+    vertical-align: middle;
+    border-radius: 50%;
+    background-color: var(--color-metal);
+  }
+
+  .skin-quiz__progress {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    max-width: 52rem;
+    margin-block-end: var(--space-l);
+  }
+
+  .skin-quiz__progress[hidden] {
+    display: none;
+  }
+
+  .skin-quiz__bar {
+    display: block;
+    height: 2px;
+    overflow: hidden;
+    background-color: var(--color-border);
+  }
+
+  .skin-quiz__bar-fill {
+    display: block;
+    height: 100%;
+    background-color: var(--color-metal);
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    transition: transform 0.8s var(--ease-out);
+  }
+
+  .skin-quiz__question-title {
+    font-family: var(--font-display--family);
+    font-size: var(--text-2xl);
+    line-height: var(--leading-heading);
+  }
+
+  .skin-quiz__options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr));
+    gap: var(--space-s);
+  }
+
+  .skin-quiz__option {
+    display: flex;
+    align-items: center;
+    min-height: 3.75rem;
+    padding: var(--space-s) var(--space-m);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    cursor: pointer;
+    transition:
+      border-color var(--duration-fast) var(--ease-out),
+      background-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .skin-quiz__option:hover {
+    border-color: var(--color-metal);
+  }
+
+  .skin-quiz__option:has(:checked) {
+    color: var(--color-deep);
+    background-color: var(--color-metal);
+    border-color: var(--color-metal);
+  }
+
+  .skin-quiz__option:has(:focus-visible) {
+    outline: 1px solid var(--color-foreground);
+    outline-offset: 3px;
+  }
+
+  .skin-quiz__nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-m);
+    padding-block-start: var(--space-s);
+  }
+
+  .skin-quiz__nav-end {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-l);
+  }
+
+  .skin-quiz__back,
+  .skin-quiz [data-action='skip-photo'],
+  .skin-quiz [data-action='restart'] {
+    font: inherit;
+    font-size: var(--text-xs);
+    color: inherit;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+
+  .skin-quiz__photo-row {
+    display: grid;
+    gap: var(--space-l);
+  }
+
+  .skin-quiz__dropzone {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    max-width: 16rem;
+    overflow: hidden;
+    border: 1px dashed var(--color-metal);
+    border-radius: 1.5rem;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out);
+  }
+
+  .skin-quiz__dropzone:hover {
+    background-color: var(--color-surface);
+  }
+
+  .skin-quiz__dropzone:has(:focus-visible) {
+    outline: 1px solid var(--color-foreground);
+    outline-offset: 3px;
+  }
+
+  .skin-quiz__dropzone-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-m);
+    font-size: var(--text-s);
+    text-align: center;
+  }
+
+  .skin-quiz__dropzone-text svg {
+    width: 2rem;
+    height: 2rem;
+    color: var(--color-metal);
+  }
+
+  .skin-quiz__preview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .skin-quiz__photo-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-m);
+  }
+
+  .skin-quiz__consent {
+    display: flex;
+    gap: var(--space-s);
+    max-width: 34rem;
+    font-size: var(--text-s);
+    cursor: pointer;
+  }
+
+  .skin-quiz__consent input {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-block-start: 0.15rem;
+    accent-color: var(--color-metal);
+  }
+
+  .skin-quiz__message {
+    font-size: var(--text-s);
+  }
+
+  .skin-quiz__message:empty {
+    display: none;
+  }
+
+  .skin-quiz__loading {
+    align-items: flex-start;
+  }
+
+  .skin-quiz__pulse {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    background-color: var(--color-aurora);
+    filter: blur(6px);
+    animation: skin-quiz-pulse 1.8s ease-in-out infinite;
+  }
+
+  @keyframes skin-quiz-pulse {
+    0%,
+    100% {
+      opacity: 0.4;
+      transform: scale(0.85);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+  }
+
+  .skin-quiz__results {
+    max-width: none;
+    gap: var(--space-2xl);
+  }
+
+  .skin-quiz__results-head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+  }
+
+  .skin-quiz__results-head .skin-quiz__heading:focus {
+    outline: none;
+  }
+
+  .skin-quiz__notes {
+    display: grid;
+    gap: var(--space-xl);
+  }
+
+  .skin-quiz__note {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+    padding-block-start: var(--space-m);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .skin-quiz__note[hidden] {
+    display: none;
+  }
+
+  .skin-quiz__observations {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .skin-quiz__observations li,
+  .skin-quiz__tip {
+    font-family: var(--font-display--family);
+    font-size: var(--text-l);
+    line-height: var(--leading-heading);
+  }
+
+  .skin-quiz__picks {
+    display: grid;
+    gap: var(--space-xl);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .skin-quiz__pick {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+  }
+
+  .skin-quiz__reason {
+    font-size: var(--text-s);
+    color: var(--color-muted);
+  }
+
+  .skin-quiz__footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-m);
+    padding-block-start: var(--space-l);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .skin-quiz__disclaimer {
+    max-width: var(--measure);
+    font-size: var(--text-xs);
+  }
+
+  .skin-quiz-setup {
+    padding: var(--space-l);
+    border: 1px dashed var(--color-metal);
+  }
+
+  @media screen and (min-width: 750px) {
+    .skin-quiz__photo-row {
+      grid-template-columns: auto 1fr;
+      align-items: center;
+    }
+
+    .skin-quiz__notes {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .skin-quiz__picks {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-l);
+    }
+
+    /* Staggered, not a uniform grid. */
+    .skin-quiz__pick:nth-child(2) {
+      margin-block-start: var(--space-2xl);
+    }
+
+    .skin-quiz__pick:nth-child(3) {
+      margin-block-start: var(--space-xl);
+    }
+
+    .skin-quiz__heading {
+      font-size: var(--text-display);
+      line-height: var(--leading-display);
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  // Longest side of the uploaded photo, and the Worker's size limit with headroom.
+  const QUIZ_PHOTO_MAX_SIDE = 1024;
+  const QUIZ_PHOTO_MAX_BYTES = 1.4 * 1024 * 1024;
+  const QUIZ_TIMEOUT_MS = 30000;
+
+  class SkinQuiz extends HTMLElement {
+    connectedCallback() {
+      if (this.ready) return;
+      this.ready = true;
+
+      this.form = this.querySelector('[data-quiz-form]');
+      this.questions = [...this.querySelectorAll('[data-quiz-panel^="q"]')];
+      this.hasPhotoStep = Boolean(this.querySelector('[data-quiz-panel="photo"]'));
+      this.totalSteps = this.questions.length + (this.hasPhotoStep ? 1 : 0);
+      this.products = JSON.parse(this.querySelector('[data-quiz-products]').textContent);
+      this.photo = null;
+
+      this.addEventListener('click', (event) => {
+        const action = event.target.closest('[data-action]')?.dataset.action;
+        if (action && this[`on_${action.replace(/-/g, '_')}`]) this[`on_${action.replace(/-/g, '_')}`]();
+      });
+
+      this.addEventListener('change', (event) => {
+        if (event.target.matches('input[type="radio"]')) {
+          event.target.closest('[data-quiz-panel]').querySelector('[data-action="next"]').disabled = false;
+        }
+        if (event.target.matches('[data-quiz-file]')) this.onPhotoChosen(event.target);
+        if (event.target.matches('[data-quiz-consent]')) this.setPhotoMessage('');
+      });
+    }
+
+    /* Panels */
+
+    show(name) {
+      this.querySelectorAll('[data-quiz-panel]').forEach((panel) => {
+        panel.hidden = panel.dataset.quizPanel !== name;
+      });
+
+      const stepIndex = name === 'photo' ? this.questions.length : Number(name.slice(1)) - 1;
+      const inSteps = name === 'photo' || /^q\d$/.test(name);
+      const progress = this.querySelector('[data-quiz-progress]');
+      progress.hidden = !inSteps;
+      if (inSteps) {
+        this.querySelector('[data-quiz-step-label]').textContent = this.dataset.stepTemplate
+          ? this.dataset.stepTemplate.replace('#current', stepIndex + 1).replace('#total', this.totalSteps)
+          : `${stepIndex + 1} / ${this.totalSteps}`;
+        this.querySelector('[data-quiz-bar]').style.transform = `scaleX(${(stepIndex + 1) / this.totalSteps})`;
+      }
+
+      const panel = this.querySelector(`[data-quiz-panel="${name}"]`);
+      this.reveal(panel);
+
+      // Move focus to the new step so keyboard and screen reader users follow along.
+      const focusTarget =
+        panel.querySelector('[data-quiz-results-heading]') ||
+        panel.querySelector('input:checked') ||
+        panel.querySelector('input, button');
+      focusTarget?.focus({ preventScroll: true });
+      this.current = name;
+    }
+
+    reveal(panel) {
+      const { gsap } = window;
+      if (!gsap || !document.documentElement.classList.contains('motion-ok')) return;
+      gsap.fromTo(panel.children, { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out' });
+    }
+
+    on_start() {
+      this.show('q1');
+      this.scrollIntoViewIfNeeded();
+    }
+
+    scrollIntoViewIfNeeded() {
+      const top = this.getBoundingClientRect().top;
+      if (top < 0 || top > window.innerHeight * 0.4) {
+        const target = window.scrollY + top - 24;
+        if (window.Motion?.lenis) window.Motion.lenis.scrollTo(target);
+        else window.scrollTo({ top: target, behavior: 'smooth' });
+      }
+    }
+
+    on_next() {
+      const index = this.questions.findIndex((q) => q.dataset.quizPanel === this.current);
+      if (index < this.questions.length - 1) this.show(this.questions[index + 1].dataset.quizPanel);
+      else if (this.hasPhotoStep) this.show('photo');
+      else this.on_submit();
+    }
+
+    on_back() {
+      if (this.current === 'photo') return this.show(this.questions[this.questions.length - 1].dataset.quizPanel);
+      const index = this.questions.findIndex((q) => q.dataset.quizPanel === this.current);
+      this.show(index > 0 ? this.questions[index - 1].dataset.quizPanel : 'intro');
+    }
+
+    on_restart() {
+      this.form.reset();
+      this.querySelectorAll('[data-action="next"]').forEach((button) => (button.disabled = true));
+      this.on_remove_photo();
+      this.show('intro');
+    }
+
+    /* Photo */
+
+    async onPhotoChosen(input) {
+      const file = input.files?.[0];
+      if (!file) return;
+      this.setPhotoMessage('');
+
+      if (!/^image\/(jpeg|png)$/.test(file.type)) {
+        input.value = '';
+        return this.setPhotoMessage(this.dataset.photoInvalid);
+      }
+
+      try {
+        this.photo = await this.preparePhoto(file);
+      } catch {
+        input.value = '';
+        return this.setPhotoMessage(this.dataset.photoInvalid);
+      }
+
+      const preview = this.querySelector('[data-quiz-preview]');
+      if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+      this.previewUrl = URL.createObjectURL(this.photo.blob);
+      preview.src = this.previewUrl;
+      preview.hidden = false;
+      this.querySelector('[data-quiz-drop-text]').hidden = true;
+      this.querySelector('[data-action="remove-photo"]').hidden = false;
+    }
+
+    /** Resizes and re-encodes as JPEG: smaller upload, and EXIF (e.g. GPS) is dropped. */
+    async preparePhoto(file) {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, QUIZ_PHOTO_MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close?.();
+
+      let quality = 0.86;
+      let blob;
+      do {
+        blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+        quality -= 0.12;
+      } while (blob && blob.size > QUIZ_PHOTO_MAX_BYTES && quality > 0.3);
+
+      if (!blob || blob.size > QUIZ_PHOTO_MAX_BYTES) throw new Error('photo too large');
+
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      return { blob, base64 };
+    }
+
+    on_remove_photo() {
+      this.photo = null;
+      const input = this.querySelector('[data-quiz-file]');
+      if (!input) return;
+      input.value = '';
+      this.querySelector('[data-quiz-consent]').checked = false;
+      const preview = this.querySelector('[data-quiz-preview]');
+      preview.hidden = true;
+      preview.removeAttribute('src');
+      if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+      this.previewUrl = null;
+      this.querySelector('[data-quiz-drop-text]').hidden = false;
+      this.querySelector('[data-action="remove-photo"]').hidden = true;
+      this.setPhotoMessage('');
+    }
+
+    setPhotoMessage(text) {
+      const message = this.querySelector('[data-quiz-photo-message]');
+      if (message) message.textContent = text;
+    }
+
+    on_skip_photo() {
+      this.on_remove_photo();
+      this.on_submit();
+    }
+
+    /* Request */
+
+    async on_submit() {
+      const consent = this.querySelector('[data-quiz-consent]')?.checked === true;
+      if (this.photo && !consent) {
+        if (this.current !== 'photo') this.show('photo');
+        return this.setPhotoMessage(this.dataset.consentRequired);
+      }
+
+      const data = new FormData(this.form);
+      const answers = Object.fromEntries(
+        ['skinType', 'mainConcern', 'sensitivity', 'routineLength', 'climate'].map((key) => [key, data.get(key)])
+      );
+
+      const body = { answers, products: this.products, language: this.dataset.language };
+      if (this.photo) Object.assign(body, { image: this.photo.base64, consent: true });
+
+      this.show('loading');
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), QUIZ_TIMEOUT_MS);
+
+      try {
+        const response = await fetch(this.dataset.endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+
+        if (response.status === 429) return this.fail(this.dataset.rateText);
+        if (!response.ok) return this.fail(this.dataset.errorText);
+
+        this.renderResults(await response.json());
+      } catch {
+        this.fail(this.dataset.errorText);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    fail(message) {
+      this.querySelector('[data-quiz-error]').textContent = message;
+      this.show('error');
+    }
+
+    renderResults({ observations = [], picks = [], routineTip = '' }) {
+      const list = this.querySelector('[data-quiz-observations]');
+      list.replaceChildren(
+        ...observations.map((text) => Object.assign(document.createElement('li'), { textContent: text }))
+      );
+      this.querySelector('[data-quiz-observations-block]').hidden = observations.length === 0;
+      this.querySelector('[data-quiz-tip]').textContent = routineTip;
+
+      const picksList = this.querySelector('[data-quiz-picks]');
+      picksList.replaceChildren(
+        ...picks
+          .map((pick) => {
+            const template = this.querySelector(`template[data-quiz-card="${CSS.escape(pick.handle)}"]`);
+            if (!template) return null;
+            const item = document.createElement('li');
+            item.className = 'skin-quiz__pick';
+            item.append(template.content.cloneNode(true));
+            item.append(Object.assign(document.createElement('p'), { className: 'skin-quiz__reason', textContent: pick.reason }));
+            return item;
+          })
+          .filter(Boolean)
+      );
+
+      this.show('results');
+    }
+  }
+
+  if (!customElements.get('skin-quiz')) customElements.define('skin-quiz', SkinQuiz);
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:general.skin_quiz",
+  "tag": "section",
+  "class": "skin-quiz-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "worker_url",
+      "label": "t:labels.worker_url",
+      "info": "t:info.worker_url"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "t:labels.collection",
+      "info": "t:info.quiz_collection"
+    },
+    {
+      "type": "text",
+      "id": "exclude_types",
+      "label": "t:labels.exclude_types",
+      "info": "t:info.exclude_types",
+      "default": "accessories"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_photo",
+      "label": "t:labels.enable_photo",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:labels.eyebrow",
+      "info": "t:info.locale_default"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:labels.headline",
+      "info": "t:info.locale_default"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:labels.text",
+      "info": "t:info.locale_default"
+    },
+    {
+      "type": "select",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "options": [
+        { "value": "scheme-light", "label": "t:options.color_scheme.light" },
+        { "value": "scheme-deep", "label": "t:options.color_scheme.deep" }
+      ],
+      "default": "scheme-deep"
+    }
+  ],
+  "presets": [{ "name": "t:general.skin_quiz" }]
+}
+{% endschema %}

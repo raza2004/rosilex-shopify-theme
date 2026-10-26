@@ -1,0 +1,52 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "hero": {
+      "type": "hero",
+      "settings": {}
+    },
+    "marquee": {
+      "type": "marquee",
+      "blocks": {
+        "item_1": { "type": "item", "settings": {} },
+        "item_2": { "type": "item", "settings": {} },
+        "item_3": { "type": "item", "settings": {} },
+        "item_4": { "type": "item", "settings": {} }
+      },
+      "block_order": ["item_1", "item_2", "item_3", "item_4"],
+      "settings": {}
+    },
+    "featured_collection": {
+      "type": "featured-collection",
+      "settings": {}
+    },
+    "skin_quiz": {
+      "type": "skin-quiz",
+      "settings": {
+        "worker_url": "https://rosexious-quiz.rosexious.workers.dev",
+        "enable_photo": true,
+        "color_scheme": "scheme-deep"
+      }
+    },
+    "ingredient_story": {
+      "type": "ingredient-story",
+      "blocks": {
+        "cloudberry": { "type": "ingredient", "settings": {} },
+        "birch": { "type": "ingredient", "settings": {} },
+        "sea_buckthorn": { "type": "ingredient", "settings": {} },
+        "lingonberry": { "type": "ingredient", "settings": {} }
+      },
+      "block_order": ["cloudberry", "birch", "sea_buckthorn", "lingonberry"],
+      "settings": {}
+    }
+  },
+  "order": ["hero", "marquee", "featured_collection", "skin_quiz", "ingredient_story"]
+}

@@ -1,0 +1,185 @@
+{% comment %}
+  Frequently asked questions: a heading column beside an accordion of
+  question blocks. Each answer opens in place (native details/summary, so it
+  works with the keyboard and without JavaScript).
+{% endcomment %}
+
+<div class="faq {{ section.settings.color_scheme }}">
+  <div class="faq__intro">
+    {% if section.settings.eyebrow != blank %}
+      <p class="eyebrow text-muted" data-motion="up">{{ section.settings.eyebrow | escape }}</p>
+    {% endif %}
+    {% if section.settings.heading != blank %}
+      <h2 class="faq__heading" data-motion="lines">{{ section.settings.heading }}</h2>
+    {% endif %}
+    {% if section.settings.text != blank %}
+      <div class="rte text-muted" data-motion="up">{{ section.settings.text }}</div>
+    {% endif %}
+  </div>
+
+  <div class="faq__list" data-motion="rise">
+    {% for block in section.blocks %}
+      <details class="faq__item" {{ block.shopify_attributes }} {% if forloop.first and section.settings.open_first %}open{% endif %}>
+        <summary class="faq__question">
+          <span>{{ block.settings.question | escape }}</span>
+          <span class="faq__icon" aria-hidden="true"></span>
+        </summary>
+        <div class="faq__answer rte text-muted">{{ block.settings.answer }}</div>
+      </details>
+    {% endfor %}
+  </div>
+</div>
+
+{% stylesheet %}
+  .faq {
+    display: grid;
+    gap: var(--space-xl);
+    padding-block: var(--space-section);
+  }
+
+  .faq__intro {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+  }
+
+  .faq__heading {
+    font-size: var(--text-2xl);
+  }
+
+  .faq__item {
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .faq__item:last-child {
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .faq__question {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-m);
+    padding-block: var(--space-m);
+    font-family: var(--font-display--family);
+    font-size: var(--text-l);
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .faq__question::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq__question:focus-visible {
+    outline: 1px solid var(--color-foreground);
+    outline-offset: 2px;
+  }
+
+  .faq__icon {
+    position: relative;
+    flex-shrink: 0;
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  .faq__icon::before,
+  .faq__icon::after {
+    content: '';
+    position: absolute;
+    inset: 50% 0 auto;
+    height: 1px;
+    background-color: currentcolor;
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  .faq__icon::after {
+    transform: rotate(90deg);
+  }
+
+  .faq__item[open] .faq__icon::after {
+    transform: rotate(0deg);
+  }
+
+  .faq__answer {
+    max-width: var(--measure);
+    padding-block-end: var(--space-l);
+  }
+
+  @media screen and (min-width: 990px) {
+    .faq {
+      grid-template-columns: 4fr 7fr;
+      gap: var(--space-3xl);
+      align-items: start;
+    }
+
+    .faq__intro {
+      position: sticky;
+      top: var(--space-xl);
+    }
+
+    .faq__heading {
+      font-size: var(--text-3xl);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.faq",
+  "tag": "section",
+  "class": "faq-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:labels.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:labels.headline"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:labels.text"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_first",
+      "label": "t:labels.open_by_default",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "options": [
+        { "value": "scheme-light", "label": "t:options.color_scheme.light" },
+        { "value": "scheme-deep", "label": "t:options.color_scheme.deep" }
+      ],
+      "default": "scheme-light"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "question",
+      "name": "t:general.question",
+      "settings": [
+        {
+          "type": "text",
+          "id": "question",
+          "label": "t:labels.question"
+        },
+        {
+          "type": "richtext",
+          "id": "answer",
+          "label": "t:labels.answer"
+        }
+      ]
+    }
+  ],
+  "presets": [{ "name": "t:general.faq" }]
+}
+{% endschema %}

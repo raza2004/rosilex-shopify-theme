@@ -1,0 +1,352 @@
+{% liquid
+  # Blank text settings fall back to the translated default copy in the locale files
+  assign default_eyebrow = 'sections.ingredient_story.eyebrow' | t
+  assign default_headline = 'sections.ingredient_story.headline_html' | t
+  assign default_text = 'sections.ingredient_story.text_html' | t
+  assign eyebrow = section.settings.eyebrow | default: default_eyebrow
+  assign headline = section.settings.headline | default: default_headline
+  assign text = section.settings.text | default: default_text
+%}
+
+<ingredient-story id="ingredients" class="ingredient-story full-width" data-cursor="{{ 'general.cursor_scroll' | t | escape }}">
+  <div class="ingredient-story__viewport">
+    <div class="ingredient-story__track">
+      <div class="ingredient-story__intro">
+        <p class="eyebrow">{{ eyebrow | escape }}</p>
+        <h2 class="ingredient-story__headline" data-motion="lines">{{ headline }}</h2>
+        <div class="text-muted">{{ text }}</div>
+      </div>
+
+      {% for block in section.blocks %}
+        {% liquid
+          # Default copy follows the panel's position (1 to 4)
+          assign title_key = 'sections.ingredient_story.ingredient_' | append: forloop.index | append: '_title'
+          assign text_key = 'sections.ingredient_story.ingredient_' | append: forloop.index | append: '_text_html'
+          assign default_title = title_key | t
+          assign default_text = text_key | t
+          assign title = block.settings.title | default: default_title
+          assign text = block.settings.text | default: default_text
+        %}
+        <article class="ingredient-panel" {{ block.shopify_attributes }}>
+          <div class="ingredient-panel__media">
+            {% if block.settings.image %}
+              {{
+                block.settings.image
+                | image_url: width: 1400
+                | image_tag:
+                  class: 'ingredient-panel__image',
+                  widths: '400, 600, 800, 1000, 1400',
+                  sizes: '(min-width: 750px) 30vw, 78vw',
+                  loading: 'lazy'
+              }}
+            {% elsif forloop.index <= 4 %}
+              {% liquid
+                # Default photo for this position, shipped with the theme until an image is picked
+                assign default_small = 'ingredient-' | append: forloop.index | append: '-600.jpg'
+                assign default_large = 'ingredient-' | append: forloop.index | append: '-1000.jpg'
+              %}
+              <img
+                class="ingredient-panel__image"
+                src="{{ default_small | asset_url }}"
+                srcset="{{ default_small | asset_url }} 600w, {{ default_large | asset_url }} 1000w"
+                sizes="(min-width: 750px) 30vw, 78vw"
+                width="1000"
+                height="1333"
+                alt="{{ title | escape }}"
+                loading="lazy"
+              >
+            {% else %}
+              {{ 'image' | placeholder_svg_tag: 'ingredient-panel__image ingredient-panel__image--placeholder' }}
+            {% endif %}
+          </div>
+
+          <div class="ingredient-panel__body">
+            <p class="ingredient-panel__index eyebrow">{{ forloop.index | prepend: '0' }}</p>
+
+            <h3 class="ingredient-panel__title">{{ title | escape }}</h3>
+            <div class="ingredient-panel__text text-muted">{{ text }}</div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </div>
+</ingredient-story>
+
+{% stylesheet %}
+  .ingredient-story {
+    --panel-width: 78vw;
+
+    display: block;
+  }
+
+  /*
+   * Default (mobile, reduced motion, no JS): a native horizontal scroller with
+   * snap points. On desktop with motion allowed, motion pins the section and
+   * drives the track from vertical scroll instead (.is-pinned).
+   */
+  .ingredient-story__viewport {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .ingredient-story__viewport::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ingredient-story__track {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-l);
+    width: max-content;
+    padding: var(--space-section) var(--page-margin);
+  }
+
+  .ingredient-story__intro,
+  .ingredient-panel {
+    flex: 0 0 var(--panel-width);
+    scroll-snap-align: start;
+    scroll-margin-inline-start: var(--page-margin);
+  }
+
+  .ingredient-story__intro {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+  }
+
+  .ingredient-story__headline {
+    font-size: var(--text-3xl);
+  }
+
+  .ingredient-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+  }
+
+  .ingredient-panel__media {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    background-color: var(--color-surface);
+  }
+
+  .ingredient-panel__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .ingredient-panel__image--placeholder {
+    fill: var(--color-border);
+  }
+
+  .ingredient-panel__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+    max-width: 34ch;
+  }
+
+  .ingredient-panel__index {
+    color: var(--color-muted);
+  }
+
+  /* A platinum hairline above each panel's copy. */
+  .ingredient-panel__body::before {
+    content: '';
+    width: 2.5rem;
+    height: 1px;
+    margin-block-end: var(--space-xs);
+    background-color: var(--color-metal);
+  }
+
+  .ingredient-panel__title {
+    font-size: var(--text-xl);
+  }
+
+  @media screen and (min-width: 750px) {
+    .ingredient-story {
+      --panel-width: clamp(18rem, 28vw, 27rem);
+    }
+
+    .ingredient-story__track {
+      gap: var(--space-2xl);
+      padding-inline: max(var(--page-margin), calc((100vw - var(--page-width)) / 2 + var(--page-margin)));
+    }
+
+    .ingredient-story__intro {
+      flex-basis: clamp(20rem, 34vw, 32rem);
+      align-self: center;
+    }
+
+    /* Alternate panel heights for an asymmetric rhythm. */
+    .ingredient-panel:nth-of-type(even) {
+      margin-block-start: var(--space-3xl);
+    }
+
+    /*
+     * Pinned, the whole track must fit one screen: image capped at 46% of the
+     * viewport height, a smaller stagger, and padding above and below so no
+     * text runs into the next section.
+     */
+    .ingredient-story.is-pinned .ingredient-story__viewport {
+      display: flex;
+      align-items: center;
+      height: 100svh;
+      overflow: hidden;
+      scroll-snap-type: none;
+    }
+
+    .ingredient-story.is-pinned .ingredient-story__track {
+      padding-block: var(--space-xl);
+    }
+
+    .ingredient-story.is-pinned .ingredient-panel__media {
+      max-height: 46svh;
+    }
+
+    .ingredient-story.is-pinned .ingredient-panel:nth-of-type(even) {
+      margin-block-start: var(--space-xl);
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  const onMotion = (fn) =>
+    window.Motion
+      ? fn(window.Motion)
+      : document.addEventListener('motion:ready', () => fn(window.Motion), { once: true });
+
+  class IngredientStory extends HTMLElement {
+    connectedCallback() {
+      if (this.mounted) return;
+      this.mounted = true;
+      onMotion((Motion) => Motion.add(this, (el) => this.setupPin(el), '(min-width: 750px)'));
+    }
+
+    disconnectedCallback() {
+      // Being moved in the DOM also disconnects; only clean up when actually removed.
+      requestAnimationFrame(() => {
+        if (this.isConnected) return;
+        this.mounted = false;
+        window.Motion?.revert(this);
+      });
+    }
+
+    setupPin(el) {
+      const { gsap } = window;
+      const viewport = el.querySelector('.ingredient-story__viewport');
+      const track = el.querySelector('.ingredient-story__track');
+      const distance = () => Math.max(0, track.scrollWidth - viewport.clientWidth);
+
+      // Switch to the pinned layout before anything is measured.
+      el.classList.add('is-pinned');
+
+      // Pin the inner viewport, not the custom element: pinning wraps the
+      // pinned node, and moving a custom element re-runs its lifecycle.
+      const slide = gsap.to(track, {
+        x: () => -distance(),
+        ease: 'none',
+        scrollTrigger: {
+          trigger: viewport,
+          pin: viewport,
+          scrub: 1,
+          end: () => `+=${distance()}`,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      // Each panel's image settles and its text rises as it slides into view.
+      el.querySelectorAll('.ingredient-panel').forEach((panel) => {
+        gsap.fromTo(
+          panel.querySelector('.ingredient-panel__image'),
+          { scale: 1.15 },
+          {
+            scale: 1,
+            ease: 'none',
+            scrollTrigger: { trigger: panel, containerAnimation: slide, start: 'left right', end: 'right left', scrub: true },
+          }
+        );
+
+        gsap.from(panel.querySelector('.ingredient-panel__body'), {
+          autoAlpha: 0,
+          y: 32,
+          ease: 'none',
+          scrollTrigger: { trigger: panel, containerAnimation: slide, start: 'left 95%', end: 'left 60%', scrub: true },
+        });
+      });
+
+      return () => el.classList.remove('is-pinned');
+    }
+  }
+
+  if (!customElements.get('ingredient-story')) customElements.define('ingredient-story', IngredientStory);
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:general.ingredient_story",
+  "tag": "section",
+  "class": "ingredient-story-section",
+  "max_blocks": 4,
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:labels.eyebrow",
+      "info": "t:info.locale_default"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "t:labels.headline",
+      "info": "t:info.locale_default"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:labels.text",
+      "info": "t:info.locale_default"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "ingredient",
+      "name": "t:general.ingredient",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "t:labels.image"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "t:labels.title",
+          "info": "t:info.locale_default"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "t:labels.text",
+          "info": "t:info.locale_default"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.ingredient_story",
+      "blocks": [
+        { "type": "ingredient" },
+        { "type": "ingredient" },
+        { "type": "ingredient" },
+        { "type": "ingredient" }
+      ]
+    }
+  ]
+}
+{% endschema %}

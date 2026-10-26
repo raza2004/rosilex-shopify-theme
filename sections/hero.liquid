@@ -1,0 +1,483 @@
+{% liquid
+  assign image = section.settings.image
+  assign heading_tag = section.settings.heading_tag
+
+  # Blank text settings fall back to the translated default copy in the locale files
+  assign default_headline = 'sections.hero.headline_html' | t
+  assign default_text = 'sections.hero.text_html' | t
+  assign default_button_label = 'sections.hero.button_label' | t
+  assign headline = section.settings.headline | default: default_headline
+  assign text = section.settings.text | default: default_text
+  assign button_label = section.settings.button_label | default: default_button_label
+  assign button_link = section.settings.button_link | default: routes.all_products_collection_url
+%}
+
+<hero-section class="hero full-width {{ section.settings.color_scheme }} {{ section.settings.content_position }}">
+  {% comment %} Aurora: an amethyst and a periwinkle glow drifting behind the copy. Decorative. {% endcomment %}
+  <div class="hero__aurora" aria-hidden="true">
+    <span class="hero__orb hero__orb--amethyst"></span>
+    <span class="hero__orb hero__orb--periwinkle"></span>
+  </div>
+
+  <div class="hero__content">
+    {% if section.settings.eyebrow != blank %}
+      <p class="hero__eyebrow eyebrow hero__reveal">{{ section.settings.eyebrow | escape }}</p>
+    {% endif %}
+
+    <{{ heading_tag }} class="hero__headline">{{ headline }}</{{ heading_tag }}>
+
+    <div class="hero__text text-muted measure hero__reveal">{{ text }}</div>
+
+    {% if button_label != blank %}
+      <div class="hero__actions hero__reveal">
+        <a class="button button--primary" href="{{ button_link }}" data-magnetic>
+          {{- button_label | escape -}}
+          <svg class="button__arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+            <path d="M1 8h13M9 3l5 5-5 5" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+        </a>
+      </div>
+    {% endif %}
+
+    <p class="hero__scroll hero__reveal" aria-hidden="true">
+      <span class="hero__scroll-line"></span>
+      {{ 'sections.hero.scroll' | t }}
+    </p>
+  </div>
+
+  <div class="hero__media">
+    {% if image %}
+      {% comment %} The hero image is usually the LCP element, so it loads eagerly with high priority. {% endcomment %}
+      {{
+        image
+        | image_url: width: 2400
+        | image_tag:
+          class: 'hero__image',
+          widths: '600, 900, 1200, 1600, 2000, 2400',
+          sizes: '(min-width: 750px) 55vw, 100vw',
+          loading: 'eager',
+          fetchpriority: 'high',
+          preload: true
+      }}
+    {% else %}
+      {% comment %} Default editorial photo shipped with the theme until an image is picked {% endcomment %}
+      <img
+        class="hero__image"
+        src="{{ 'hero-1400.jpg' | asset_url }}"
+        srcset="{{ 'hero-800.jpg' | asset_url }} 800w, {{ 'hero-1400.jpg' | asset_url }} 1400w, {{ 'hero-2000.jpg' | asset_url }} 2000w"
+        sizes="(min-width: 750px) 55vw, 100vw"
+        width="2000"
+        height="1333"
+        alt=""
+        loading="eager"
+        fetchpriority="high"
+      >
+    {% endif %}
+  </div>
+</hero-section>
+
+{% stylesheet %}
+  .hero {
+    --hero-parallax: 12%;
+
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: 100svh;
+    overflow: clip;
+  }
+
+  .hero__aurora {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .hero__orb {
+    position: absolute;
+    width: 46vmax;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    filter: blur(90px);
+  }
+
+  .hero__orb--amethyst {
+    inset-block-start: -12%;
+    inset-inline-start: -10%;
+    background-color: var(--color-aurora);
+    opacity: 0.34;
+    animation: hero-aurora 22s ease-in-out infinite;
+  }
+
+  .hero__orb--periwinkle {
+    inset-block-end: -18%;
+    inset-inline-start: 18%;
+    width: 34vmax;
+    background-color: var(--color-metal);
+    opacity: 0.26;
+    animation: hero-aurora 28s ease-in-out -9s infinite reverse;
+  }
+
+  /* On the light scheme the glows stay faint so text keeps its contrast. */
+  .scheme-light .hero__orb {
+    opacity: 0.18;
+  }
+
+  @keyframes hero-aurora {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(14%, 10%) scale(1.12);
+    }
+    66% {
+      transform: translate(-8%, 16%) scale(0.92);
+    }
+  }
+
+  .hero__content,
+  .hero__media {
+    position: relative;
+  }
+
+  /* Mobile first: image stacked above the text. */
+  .hero__media {
+    position: relative;
+    order: -1;
+    height: 62svh;
+    overflow: hidden;
+    background-color: var(--color-surface);
+  }
+
+  .hero__image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero__image--placeholder {
+    fill: var(--color-border);
+  }
+
+  .hero__content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-m);
+    padding: var(--space-xl) var(--page-margin) var(--space-2xl);
+  }
+
+  .hero__headline {
+    font-size: var(--text-display);
+    line-height: var(--leading-display);
+  }
+
+  .hero__headline em {
+    font-style: italic;
+  }
+
+  .hero__actions {
+    margin-block-start: var(--space-s);
+  }
+
+  /* Scroll cue: a hairline that keeps drawing downward. */
+  .hero__scroll {
+    display: none;
+    align-items: center;
+    gap: var(--space-s);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .hero__scroll-line {
+    position: relative;
+    width: 3rem;
+    height: 1px;
+    overflow: hidden;
+    background-color: var(--color-border);
+  }
+
+  .hero__scroll-line::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--color-foreground);
+    transform: translateX(-100%);
+    animation: hero-scroll-line 2.4s var(--ease-out) infinite;
+  }
+
+  @keyframes hero-scroll-line {
+    0% {
+      transform: translateX(-100%);
+    }
+    60%,
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  @media screen and (min-width: 750px) {
+    .hero {
+      grid-template-columns: 45% 55%;
+    }
+
+    .hero__media {
+      order: 0;
+      height: auto;
+      min-height: 100svh;
+    }
+
+    .hero__content {
+      justify-content: center;
+      gap: var(--space-l);
+      padding-block: var(--space-section);
+      padding-inline: max(var(--page-margin), calc((100vw - var(--page-width)) / 2 + var(--page-margin))) var(--space-2xl);
+    }
+
+    .hero--content-bottom .hero__content {
+      justify-content: flex-end;
+    }
+
+    .hero__scroll {
+      display: flex;
+      margin-block-start: var(--space-xl);
+    }
+  }
+
+  /*
+   * Starting state for the intro, applied only when motion is allowed
+   * (html.motion-ok, see motion.js). The image is taller than its frame by
+   * --hero-parallax so the parallax shift never shows an empty edge.
+   */
+  .motion-ok .hero__headline,
+  .motion-ok .hero__reveal {
+    visibility: hidden;
+  }
+
+  .motion-ok .hero__media {
+    clip-path: inset(100% 0% 0% 0%);
+  }
+
+  .motion-ok .hero__image {
+    top: calc(var(--hero-parallax) * -1);
+    height: calc(100% + var(--hero-parallax));
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  // Keep in sync with --hero-parallax in the stylesheet.
+  const HERO_PARALLAX = 0.12;
+
+  const onMotion = (fn) =>
+    window.Motion
+      ? fn(window.Motion)
+      : document.addEventListener('motion:ready', () => fn(window.Motion), { once: true });
+
+  class HeroSection extends HTMLElement {
+    connectedCallback() {
+      if (this.mounted) return;
+      this.mounted = true;
+      onMotion((Motion) => Motion.add(this, (el) => this.setupMotion(el)));
+    }
+
+    disconnectedCallback() {
+      // Being moved in the DOM also disconnects; only clean up when actually removed.
+      requestAnimationFrame(() => {
+        if (this.isConnected) return;
+        this.mounted = false;
+        window.Motion?.revert(this);
+      });
+    }
+
+    setupMotion(el) {
+      const { gsap, SplitText } = window;
+      const headline = el.querySelector('.hero__headline');
+      const content = el.querySelector('.hero__content');
+      const media = el.querySelector('.hero__media');
+      const image = el.querySelector('.hero__image');
+      const reveals = el.querySelectorAll('.hero__reveal');
+
+      // Intro: headline lines rise out of their masks with a slight tilt, the
+      // image unmasks bottom to top while settling from a zoom, then the
+      // supporting copy follows.
+      const intro = (lines) => {
+        const timeline = gsap.timeline({ delay: 0.2 });
+
+        if (lines) {
+          timeline.from(lines, {
+            yPercent: 115,
+            rotate: 4,
+            transformOrigin: '0% 0%',
+            duration: 1.3,
+            stagger: 0.12,
+          });
+        }
+
+        timeline
+          .fromTo(
+            media,
+            { clipPath: 'inset(100% 0% 0% 0%)' },
+            { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.4, ease: 'power4.inOut' },
+            lines ? 0.35 : 0
+          )
+          .from(image, { scale: 1.35, duration: 2.2, ease: 'power3.out' }, '<')
+          .fromTo(
+            reveals,
+            { autoAlpha: 0, y: 24 },
+            { autoAlpha: 1, y: 0, duration: 1, stagger: 0.1 },
+            lines ? 0.8 : 0.4
+          );
+
+        return timeline;
+      };
+
+      if (headline) {
+        SplitText.create(headline, {
+          type: 'lines',
+          mask: 'lines',
+          autoSplit: true,
+          onSplit(self) {
+            gsap.set(headline, { visibility: 'visible' });
+            return intro(self.lines);
+          },
+        });
+      } else {
+        intro(null);
+      }
+
+      // Scrolling away, the copy drifts up and fades a little ahead of the page.
+      gsap.to(content, {
+        yPercent: -10,
+        opacity: 0.3,
+        ease: 'none',
+        scrollTrigger: { trigger: el, start: 'top top', end: 'bottom top', scrub: true },
+      });
+
+      // Parallax: the image drifts down as the page scrolls, so it moves slower than the page.
+      if (image) {
+        gsap.to(image, {
+          y: () => media.offsetHeight * HERO_PARALLAX,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
+        });
+      }
+    }
+  }
+
+  if (!customElements.get('hero-section')) customElements.define('hero-section', HeroSection);
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:general.hero",
+  "tag": "section",
+  "class": "hero-section",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:labels.image"
+    },
+    {
+      "type": "header",
+      "content": "t:general.content"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:labels.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "t:labels.headline",
+      "info": "t:info.locale_default"
+    },
+    {
+      "type": "select",
+      "id": "heading_tag",
+      "label": "t:labels.heading_tag",
+      "options": [
+        {
+          "value": "h1",
+          "label": "t:options.heading_tag.h1"
+        },
+        {
+          "value": "h2",
+          "label": "t:options.heading_tag.h2"
+        }
+      ],
+      "default": "h1"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:labels.text",
+      "info": "t:info.locale_default"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "t:labels.button_label",
+      "info": "t:info.locale_default"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "t:labels.button_link"
+    },
+    {
+      "type": "header",
+      "content": "t:general.layout"
+    },
+    {
+      "type": "select",
+      "id": "content_position",
+      "label": "t:labels.content_position",
+      "options": [
+        {
+          "value": "hero--content-center",
+          "label": "t:options.content_position.center"
+        },
+        {
+          "value": "hero--content-bottom",
+          "label": "t:options.content_position.bottom"
+        }
+      ],
+      "default": "hero--content-center"
+    },
+    {
+      "type": "select",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "options": [
+        {
+          "value": "scheme-light",
+          "label": "t:options.color_scheme.light"
+        },
+        {
+          "value": "scheme-deep",
+          "label": "t:options.color_scheme.deep"
+        }
+      ],
+      "default": "scheme-deep"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.hero"
+    }
+  ]
+}
+{% endschema %}

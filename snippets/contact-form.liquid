@@ -1,0 +1,221 @@
+{% doc %}
+  Renders the contact block: store details beside a contact form that
+  posts to Shopify (messages arrive at the store's sender email). Shows a
+  success message after sending, and field errors when something is missing.
+
+  @param {string} id - Unique suffix for field ids, usually section.id
+
+  @example
+  {% render 'contact-form', id: section.id %}
+{% enddoc %}
+
+<div class="contact">
+  <aside class="contact__details" data-motion="rise">
+    <p class="eyebrow text-muted">{{ 'contact.details_heading' | t }}</p>
+    <h2 class="contact__heading">{{ 'contact.heading' | t }}</h2>
+    <p class="text-muted measure">{{ 'contact.intro' | t }}</p>
+
+    <dl class="contact__list">
+      {% if shop.email != blank %}
+        <div>
+          <dt class="eyebrow text-muted">{{ 'contact.email_label' | t }}</dt>
+          <dd><a class="link-sweep contact__value" href="mailto:{{ shop.email }}">{{ shop.email }}</a></dd>
+        </div>
+      {% endif %}
+      {% if shop.phone != blank %}
+        <div>
+          <dt class="eyebrow text-muted">{{ 'contact.phone_label' | t }}</dt>
+          <dd><a class="link-sweep contact__value" href="tel:{{ shop.phone | remove: ' ' }}">{{ shop.phone }}</a></dd>
+        </div>
+      {% endif %}
+      {% if shop.address.city != blank %}
+        <div>
+          <dt class="eyebrow text-muted">{{ 'contact.address_label' | t }}</dt>
+          <dd class="contact__value">{{ shop.address | format_address }}</dd>
+        </div>
+      {% endif %}
+      <div>
+        <dt class="eyebrow text-muted">{{ 'contact.hours_label' | t }}</dt>
+        <dd class="contact__value">{{ 'contact.hours_text' | t }}</dd>
+      </div>
+    </dl>
+  </aside>
+
+  {% form 'contact', class: 'contact-form', id: 'ContactForm' %}
+    {% if form.posted_successfully? %}
+      <p class="contact-form__status contact-form__status--success" role="status">
+        {{ 'contact.success' | t }}
+      </p>
+    {% elsif form.errors %}
+      <div class="contact-form__status" role="alert">
+        <p>{{ 'contact.error' | t }}</p>
+        {{ form.errors | default_errors }}
+      </div>
+    {% endif %}
+
+    <div class="contact-form__row">
+      <div class="field">
+        <label class="field__label" for="ContactName-{{ id }}">{{ 'contact.name' | t }}</label>
+        <input
+          class="field__input"
+          type="text"
+          id="ContactName-{{ id }}"
+          name="contact[name]"
+          value="{{ form.name }}"
+          autocomplete="name"
+        >
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="ContactEmail-{{ id }}">{{ 'contact.email' | t }}</label>
+        <input
+          class="field__input"
+          type="email"
+          id="ContactEmail-{{ id }}"
+          name="contact[email]"
+          value="{{ form.email }}"
+          autocomplete="email"
+          required
+          aria-required="true"
+        >
+      </div>
+    </div>
+
+    <div class="contact-form__row">
+      <div class="field">
+        <label class="field__label" for="ContactPhone-{{ id }}">{{ 'contact.phone' | t }}</label>
+        <input
+          class="field__input"
+          type="tel"
+          id="ContactPhone-{{ id }}"
+          name="contact[phone]"
+          value="{{ form.phone }}"
+          autocomplete="tel"
+        >
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="ContactTopic-{{ id }}">{{ 'contact.topic' | t }}</label>
+        <select class="field__input contact-form__select" id="ContactTopic-{{ id }}" name="contact[topic]">
+          <option value="{{ 'contact.topic_advice' | t | escape }}">{{ 'contact.topic_advice' | t }}</option>
+          <option value="{{ 'contact.topic_order' | t | escape }}">{{ 'contact.topic_order' | t }}</option>
+          <option value="{{ 'contact.topic_wholesale' | t | escape }}">{{ 'contact.topic_wholesale' | t }}</option>
+          <option value="{{ 'contact.topic_press' | t | escape }}">{{ 'contact.topic_press' | t }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="ContactMessage-{{ id }}">{{ 'contact.message' | t }}</label>
+      <textarea
+        class="field__input"
+        id="ContactMessage-{{ id }}"
+        name="contact[body]"
+        rows="5"
+        required
+        aria-required="true"
+      >
+        {{- form.body -}}
+      </textarea>
+    </div>
+
+    <div class="contact-form__footer">
+      <button type="submit" class="button button--primary" data-magnetic>{{ 'contact.submit' | t }}</button>
+      <p class="contact-form__note text-muted">{{ 'contact.response_note' | t }}</p>
+    </div>
+  {% endform %}
+</div>
+
+{% stylesheet %}
+  .contact {
+    display: grid;
+    gap: var(--space-2xl);
+  }
+
+  .contact__details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+  }
+
+  .contact__heading {
+    font-size: var(--text-2xl);
+  }
+
+  .contact__list {
+    display: grid;
+    gap: var(--space-m);
+    margin: var(--space-s) 0 0;
+    padding-block-start: var(--space-l);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .contact__list dd {
+    margin: var(--space-3xs) 0 0;
+  }
+
+  .contact__value {
+    font-size: var(--text-l);
+    font-family: var(--font-display--family);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-l);
+  }
+
+  .contact-form__row {
+    display: grid;
+    gap: var(--space-l);
+  }
+
+  .contact-form__select {
+    appearance: none;
+    cursor: pointer;
+    background-image: none;
+  }
+
+  .contact-form__status {
+    padding: var(--space-m);
+    border: 1px solid var(--color-border);
+    border-inline-start: 2px solid var(--color-metal);
+  }
+
+  .contact-form__status--success {
+    font-family: var(--font-display--family);
+    font-size: var(--text-l);
+  }
+
+  .contact-form__footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-m);
+  }
+
+  .contact-form__note {
+    font-size: var(--text-s);
+  }
+
+  @media screen and (min-width: 750px) {
+    .contact-form__row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media screen and (min-width: 990px) {
+    .contact {
+      grid-template-columns: 4fr 7fr;
+      gap: var(--space-3xl);
+      align-items: start;
+    }
+
+    .contact__details {
+      position: sticky;
+      top: var(--space-xl);
+    }
+  }
+{% endstylesheet %}

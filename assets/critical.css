@@ -1,0 +1,612 @@
+/** Critical CSS for the theme. This file is included on every page. */
+
+/* Reset styles inspired by https://www.joshwcomeau.com/css/custom-css-reset/ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+/*
+ * Never scroll sideways. Set on both: with html left visible, the browser
+ * moves body's value to the window and the clip stops applying.
+ * clip (unlike hidden) keeps position: sticky working.
+ */
+html,
+body {
+  overflow-x: clip;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  min-height: 100svh;
+}
+
+html:has(dialog[scroll-lock][open], details[scroll-lock][open]) {
+  overflow: hidden;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  border-radius: var(--style-border-radius-inputs);
+}
+
+select {
+  background-color: var(--color-background);
+  color: currentcolor;
+}
+
+dialog {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+
+p {
+  text-wrap: pretty;
+}
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+p:empty {
+  display: none;
+}
+
+:is(p, h1, h2, h3, h4, h5, h6):first-child,
+:empty:first-child + :where(p, h1, h2, h3, h4, h5, h6) {
+  margin-block-start: 0;
+}
+
+:is(p, h1, h2, h3, h4, h5, h6):last-child,
+:where(p, h1, h2, h3, h4, h5, h6) + :has(+ :empty:last-child) {
+  margin-block-end: 0;
+}
+
+/** Theme styles below */
+body {
+  font-family: var(--font-body--family);
+  font-style: var(--font-body--style);
+  font-weight: var(--font-body--weight);
+  font-size: var(--text-m);
+  line-height: var(--leading-body);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+/** Color schemes (tokens are defined in snippets/css-variables.liquid) */
+/* Deep scheme: polar night ground, opal type. Sections opt in with .scheme-deep. */
+.scheme-deep {
+  --color-background: var(--color-deep);
+  --color-foreground: var(--color-deep-foreground);
+
+  color: var(--color-foreground);
+  background-color: var(--color-background);
+}
+
+/* Derived tones are declared per scheme so they follow its colors. */
+:root,
+.scheme-deep {
+  --color-muted: color-mix(in srgb, var(--color-foreground) 66%, var(--color-background));
+  --color-border: color-mix(in srgb, var(--color-foreground) 14%, var(--color-background));
+  /* Image wells: a breath of aurora lilac over the ground, never beige. */
+  --color-surface: color-mix(in srgb, var(--color-aurora) 14%, var(--color-background));
+}
+
+::selection {
+  color: var(--color-deep);
+  background-color: var(--color-aurora);
+}
+
+/* A deep section paints its whole row, margins included. */
+/* Dialogs (the mobile menu) are overlays, not the section's own band. */
+.shopify-section:has(> .scheme-deep:not(dialog)) {
+  background-color: var(--color-deep);
+}
+
+/*
+ * Night: the whole page takes the polar night ground. Deep sections lift
+ * slightly toward aurora lilac so they still read as distinct bands.
+ */
+:root[data-theme='night'] {
+  --color-background: var(--color-deep);
+  --color-foreground: var(--color-deep-foreground);
+  color-scheme: dark;
+}
+
+:root[data-theme='night'] .scheme-deep,
+:root[data-theme='night'] .shopify-section:has(> .scheme-deep:not(dialog)) {
+  --color-background: color-mix(in srgb, var(--color-aurora) 9%, var(--color-deep));
+  background-color: var(--color-background);
+}
+
+/** Typography */
+h1,
+h2,
+h3,
+.display {
+  font-family: var(--font-display--family);
+  font-style: var(--font-display--style);
+  font-weight: var(--font-display--weight);
+  letter-spacing: var(--tracking-display);
+  text-wrap: balance;
+}
+
+.display {
+  font-size: var(--text-display);
+  line-height: var(--leading-display);
+}
+
+h1 {
+  font-size: var(--text-3xl);
+  line-height: var(--leading-display);
+}
+
+h2 {
+  font-size: var(--text-2xl);
+  line-height: var(--leading-heading);
+}
+
+h3 {
+  font-size: var(--text-xl);
+  line-height: var(--leading-heading);
+}
+
+h4,
+h5,
+h6 {
+  font-size: var(--text-l);
+  line-height: var(--leading-heading);
+  font-weight: var(--font-body--weight);
+}
+
+.eyebrow {
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.text-muted {
+  color: var(--color-muted);
+}
+
+.measure {
+  max-width: var(--measure);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+
+/** Rich text from the admin (pages, articles, descriptions) */
+.rte {
+  max-width: 68ch;
+}
+
+.rte > * + * {
+  margin-block-start: var(--space-m);
+}
+
+.rte :is(h2, h3) {
+  margin-block-start: var(--space-xl);
+}
+
+.rte img {
+  margin-block: var(--space-xl);
+}
+
+.rte blockquote {
+  padding-inline-start: var(--space-l);
+  font-family: var(--font-display--family);
+  font-size: var(--text-xl);
+  line-height: var(--leading-heading);
+  border-inline-start: 1px solid var(--color-accent);
+}
+
+/** Form fields: hairline underline, no box */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.field__label {
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.field__input {
+  width: 100%;
+  padding: var(--space-xs) 0;
+  font: inherit;
+  font-size: var(--text-l);
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-block-end: 1px solid var(--color-border);
+  border-radius: 0;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.field__input:focus {
+  outline: none;
+  border-block-end-color: var(--color-foreground);
+}
+
+.field__input:focus-visible {
+  outline: 1px solid var(--color-foreground);
+  outline-offset: 4px;
+}
+
+textarea.field__input {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+/** Shared bottom spacing for page sections */
+.page-section {
+  padding-block-end: var(--space-section);
+}
+
+/* The last section of a page always keeps clear space before the footer. */
+main > .shopify-section:last-child,
+#MainContent > .shopify-section:last-child {
+  padding-block-end: var(--space-2xl);
+}
+
+/**
+ * Buttons. On hover a fill sweeps up from the bottom edge (a transform on
+ * ::before, so it stays on the compositor).
+ */
+.button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: 3.5rem;
+  padding: var(--space-s) var(--space-xl);
+  font: inherit;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--color-foreground);
+  background-color: transparent;
+  border: 1px solid var(--color-foreground);
+  border-radius: 0;
+  cursor: pointer;
+  transition:
+    color 0.6s var(--ease-out),
+    border-color 0.6s var(--ease-out);
+}
+
+.button::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  background-color: var(--color-foreground);
+  transform: scaleY(0);
+  transform-origin: 50% 100%;
+  transition: transform 0.6s var(--ease-out);
+}
+
+.button:hover {
+  color: var(--color-background);
+}
+
+.button:hover::before {
+  transform: scaleY(1);
+}
+
+.button--primary {
+  color: var(--color-background);
+  background-color: var(--color-foreground);
+}
+
+.button--primary::before {
+  background-color: var(--color-metal);
+}
+
+/* Polar night on platinum reads in both schemes; opal on platinum would not. */
+.button--primary:hover {
+  color: var(--color-deep);
+  border-color: var(--color-metal);
+}
+
+.button__arrow {
+  width: 1rem;
+  height: 1rem;
+  transition: transform 0.6s var(--ease-out);
+}
+
+.button:hover .button__arrow {
+  transform: translateX(0.25rem);
+}
+
+/* Text link with an underline that draws in from the left on hover. */
+.link-sweep {
+  position: relative;
+  display: inline-block;
+  padding-block-end: var(--space-3xs);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.link-sweep::before,
+.link-sweep::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 1px;
+  background-color: currentcolor;
+}
+
+.link-sweep::before {
+  opacity: 0.25;
+}
+
+.link-sweep::after {
+  transform: scaleX(0);
+  transform-origin: 100% 50%;
+  transition: transform 0.7s var(--ease-out);
+}
+
+.link-sweep:hover::after {
+  transform: scaleX(1);
+  transform-origin: 0% 50%;
+}
+
+.button:disabled,
+.button[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.button:focus-visible,
+.icon-button:focus-visible {
+  outline: 1px solid var(--color-foreground);
+  outline-offset: 3px;
+}
+
+/** Quantity stepper, shared by the product form and the cart drawer */
+.quantity {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+}
+
+.quantity__step {
+  width: 2.75rem;
+  height: 100%;
+  min-height: 3.25rem;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.quantity__step:focus-visible,
+.quantity__input:focus-visible {
+  outline: 1px solid var(--color-foreground);
+  outline-offset: -1px;
+}
+
+.quantity__input {
+  width: 2.5rem;
+  padding: 0;
+  text-align: center;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  appearance: textfield;
+}
+
+.quantity__input::-webkit-inner-spin-button,
+.quantity__input::-webkit-outer-spin-button {
+  appearance: none;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.icon-button svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/** Motion */
+
+/* Lenis smooth scroll (from lenis/dist/lenis.css) */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
+}
+
+.lenis [data-lenis-prevent],
+.lenis [data-lenis-prevent-wheel],
+.lenis [data-lenis-prevent-touch] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* Page transition curtain (motion.js covers, html.page-arriving uncovers). */
+.page-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background-color: var(--color-deep);
+  transform: translateY(100%);
+  pointer-events: none;
+}
+
+.page-curtain__mark {
+  font-family: var(--font-display--family);
+  font-size: var(--text-2xl);
+  font-style: italic;
+  letter-spacing: var(--tracking-display);
+  color: var(--color-metal);
+}
+
+.page-arriving .page-curtain {
+  animation: curtain-out 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.1s both;
+}
+
+@keyframes curtain-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+/* Cursor follower, created by motion.js for fine pointers. */
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 999;
+  display: grid;
+  place-items: center;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 50%;
+  /* Periwinkle stays visible over both the light and the deep sections. */
+  background-color: var(--color-metal);
+  pointer-events: none;
+  transition: background-color 0.3s var(--ease-out);
+}
+
+/* Over links and buttons: a ring, so the text underneath stays readable.
+   The border is thick because the follower is scaled down to 0.4 here. */
+.cursor--ring {
+  background-color: transparent;
+  border: 3px solid var(--color-metal);
+}
+
+.cursor__label {
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-deep);
+}
+
+/*
+ * Elements with [data-motion] start hidden only when the inline head script
+ * has confirmed motion is allowed (html.motion-ok). motion.js reveals them.
+ * Without JS, or with reduced motion, they render normally.
+ */
+.motion-ok [data-motion] {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/** Section layout utilities */
+
+/**
+ * Setup a grid that enables both full-width and constrained layouts
+ * depending on the class of the child elements.
+ *
+ * By default, a minimum content margin is set on the left and right
+ * sides of the section and the content is centered in the viewport to
+ * not exceed the maximum page width.
+ *
+ * When a child element is given the `full-width` class, it will span
+ * the entire viewport.
+ */
+.shopify-section {
+  --content-width: min(
+    calc(var(--page-width) - var(--page-margin) * 2),
+    calc(100% - var(--page-margin) * 2)
+  );
+  --content-margin: minmax(var(--page-margin), 1fr);
+  --content-grid: var(--content-margin) var(--content-width) var(--content-margin);
+
+  /* This is required to make <img> elements work as background images */
+  position: relative;
+  grid-template-columns: var(--content-grid);
+  display: grid;
+  width: 100%;
+}
+
+/* Child elements, by default, are constrained to the central column of the grid. */
+.shopify-section > * {
+  grid-column: 2;
+}
+
+/* Child elements that use the full-width utility class span the entire viewport. */
+.shopify-section > .full-width {
+  grid-column: 1 / -1;
+}

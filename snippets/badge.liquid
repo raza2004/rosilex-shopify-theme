@@ -1,0 +1,79 @@
+{% doc %}
+  Renders a decorative badge: a ring of text that slowly rotates around a
+  sage dot. Purely ornamental, so it is hidden from assistive technology. The
+  rotation is a CSS animation, stopped by the reduced-motion rule in critical.css.
+
+  @param {string} [id] - Unique suffix for the SVG path id when several badges share a page
+  @param {string} [css_class] - Optional class for positioning
+
+  @example
+  {% render 'badge', id: section.id, css_class: 'page-header__badge' %}
+{% enddoc %}
+
+{%- assign path_id = 'badge-path-' | append: id -%}
+
+<div class="badge {{ css_class }}" aria-hidden="true">
+  <svg class="badge__ring" viewBox="0 0 200 200" focusable="false">
+    <defs>
+      <path id="{{ path_id }}" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"></path>
+    </defs>
+    <text class="badge__text">
+      <textPath href="#{{ path_id }}" textLength="488" lengthAdjust="spacing">
+        {{- 'general.badge' | t -}}
+      </textPath>
+    </text>
+  </svg>
+  <span class="badge__dot"></span>
+</div>
+
+{% stylesheet %}
+  .badge {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: clamp(7rem, 12vw, 9.5rem);
+    aspect-ratio: 1;
+    /* The spinning ring's square corners would otherwise poke past the page edge. */
+    overflow: hidden;
+    border-radius: 50%;
+  }
+
+  .badge__ring {
+    width: 100%;
+    height: 100%;
+    animation: badge-spin 24s linear infinite;
+  }
+
+  .badge__text {
+    font-family: var(--font-body--family);
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    fill: var(--color-foreground);
+  }
+
+  .badge__dot {
+    position: absolute;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background-color: var(--color-accent);
+    animation: badge-pulse 3.2s var(--ease-out) infinite;
+  }
+
+  @keyframes badge-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes badge-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.6);
+    }
+  }
+{% endstylesheet %}

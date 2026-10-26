@@ -1,0 +1,210 @@
+{% comment %}
+  An editorial ticker band. The text loops continuously, speeds up and skews
+  with scroll velocity, and reverses when the page scrolls up. Without motion
+  it is a static row.
+
+  The track holds two identical groups; moving it by -50% loops seamlessly.
+  The second group is hidden from assistive technology.
+{% endcomment %}
+
+<marquee-band class="marquee full-width {{ section.settings.color_scheme }}">
+  <div class="marquee__track">
+    {% for copy in (1..2) %}
+      <ul
+        class="marquee__group"
+        role="list"
+        {% if copy == 2 %}
+          aria-hidden="true"
+        {% endif %}
+      >
+        {% for block in section.blocks %}
+          {% liquid
+            # Default copy follows the item's position (1 to 4)
+            assign item_key = 'sections.marquee.item_' | append: forloop.index
+            assign default_item = item_key | t
+            assign item_text = block.settings.text | default: default_item
+          %}
+          <li
+            class="marquee__item"
+            {% if copy == 1 %}
+              {{ block.shopify_attributes }}
+            {% endif %}
+          >
+            {{ item_text | escape }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endfor %}
+  </div>
+</marquee-band>
+
+{% stylesheet %}
+  .marquee {
+    display: block;
+    overflow: hidden;
+    padding-block: var(--space-xl);
+    border-block: 1px solid var(--color-border);
+  }
+
+  .marquee__track {
+    display: flex;
+    width: max-content;
+  }
+
+  .marquee__group {
+    display: flex;
+    flex-shrink: 0;
+    min-width: 100vw;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .marquee__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xl);
+    padding-inline-end: var(--space-xl);
+    font-family: var(--font-display--family);
+    font-size: var(--text-3xl);
+    line-height: 1;
+    letter-spacing: var(--tracking-display);
+    white-space: nowrap;
+  }
+
+  .marquee__item:nth-child(even) {
+    font-style: italic;
+    color: var(--color-muted);
+  }
+
+  .marquee__item::after {
+    content: '';
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background-color: var(--color-accent);
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  const onMotion = (fn) =>
+    window.Motion
+      ? fn(window.Motion)
+      : document.addEventListener('motion:ready', () => fn(window.Motion), { once: true });
+
+  // Pixels per second at rest.
+  const MARQUEE_SPEED = 70;
+
+  class MarqueeBand extends HTMLElement {
+    connectedCallback() {
+      if (this.mounted) return;
+      this.mounted = true;
+      onMotion((Motion) => Motion.add(this, (el) => this.setupMotion(el)));
+    }
+
+    disconnectedCallback() {
+      // Being moved in the DOM also disconnects; only clean up when actually removed.
+      requestAnimationFrame(() => {
+        if (this.isConnected) return;
+        this.mounted = false;
+        window.Motion?.revert(this);
+      });
+    }
+
+    setupMotion(el) {
+      const { gsap, ScrollTrigger } = window;
+      const track = el.querySelector('.marquee__track');
+      const groupWidth = track.scrollWidth / 2;
+
+      const loop = gsap.to(track, {
+        xPercent: -50,
+        duration: groupWidth / MARQUEE_SPEED,
+        ease: 'none',
+        repeat: -1,
+      });
+      // Start deep into the repeat so playing in reverse never hits time zero.
+      loop.totalTime(loop.duration() * 1000);
+
+      const skew = gsap.quickTo(track, 'skewX', { duration: 0.6, ease: 'power3' });
+      const relaxSkew = gsap.delayedCall(0.15, () => skew(0)).pause();
+
+      ScrollTrigger.create({
+        trigger: el,
+        start: 'top bottom',
+        end: 'bottom top',
+        onUpdate(self) {
+          const velocity = self.getVelocity();
+          const boost = Math.min(Math.abs(velocity) / 250, 6);
+
+          loop.timeScale(self.direction * (1 + boost));
+          gsap.to(loop, { timeScale: self.direction, duration: 1.4, ease: 'power3.out', overwrite: true });
+
+          skew(gsap.utils.clamp(-8, 8, velocity / -300));
+          relaxSkew.restart(true);
+        },
+      });
+    }
+  }
+
+  if (!customElements.get('marquee-band')) customElements.define('marquee-band', MarqueeBand);
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:general.marquee",
+  "tag": "section",
+  "class": "marquee-section",
+  "max_blocks": 4,
+  "settings": [
+    {
+      "type": "select",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "options": [
+        {
+          "value": "scheme-light",
+          "label": "t:options.color_scheme.light"
+        },
+        {
+          "value": "scheme-deep",
+          "label": "t:options.color_scheme.deep"
+        }
+      ],
+      "default": "scheme-deep"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "item",
+      "name": "t:general.marquee_item",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "t:labels.text",
+          "info": "t:info.locale_default"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.marquee",
+      "blocks": [
+        {
+          "type": "item"
+        },
+        {
+          "type": "item"
+        },
+        {
+          "type": "item"
+        },
+        {
+          "type": "item"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

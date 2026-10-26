@@ -1,0 +1,140 @@
+{% comment %}
+  An editorial statement: eyebrow, a large headline that reveals line by line,
+  supporting text and an optional link. Layout is either centred or offset to
+  the right for an asymmetric page rhythm.
+{% endcomment %}
+
+<div class="rich-text {{ section.settings.color_scheme }} {{ section.settings.layout }}">
+  <div class="rich-text__inner">
+    {% if section.settings.eyebrow != blank %}
+      <p class="eyebrow text-muted" data-motion="up">{{ section.settings.eyebrow | escape }}</p>
+    {% endif %}
+
+    {% if section.settings.heading != blank %}
+      {% if section.settings.heading_level == 'h1' %}
+        <h1 class="rich-text__heading" data-motion="lines">{{ section.settings.heading }}</h1>
+      {% else %}
+        <h2 class="rich-text__heading" data-motion="lines">{{ section.settings.heading }}</h2>
+      {% endif %}
+    {% endif %}
+
+    {% if section.settings.text != blank %}
+      <div class="rich-text__text rte text-muted" data-motion="up">{{ section.settings.text }}</div>
+    {% endif %}
+
+    {% if section.settings.link_label != blank and section.settings.link != blank %}
+      <a class="link-sweep" href="{{ section.settings.link }}" data-motion="up" data-magnetic>
+        {{- section.settings.link_label | escape -}}
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+{% stylesheet %}
+  .rich-text {
+    padding-block: var(--space-section);
+  }
+
+  .rich-text__inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+    max-width: 48rem;
+  }
+
+  .rich-text__heading {
+    font-size: var(--text-3xl);
+    line-height: var(--leading-heading);
+  }
+
+  h1.rich-text__heading {
+    font-size: var(--text-display);
+    line-height: var(--leading-display);
+  }
+
+  .rich-text__text {
+    font-size: var(--text-l);
+  }
+
+  .rich-text--center .rich-text__inner {
+    align-items: center;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .rich-text--center .rich-text__text {
+    margin-inline: auto;
+  }
+
+  @media screen and (min-width: 990px) {
+    .rich-text--offset .rich-text__inner {
+      margin-inline-start: calc(100% / 12 * 4);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.rich_text",
+  "tag": "section",
+  "class": "rich-text-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:labels.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:labels.headline"
+    },
+    {
+      "type": "select",
+      "id": "heading_level",
+      "label": "t:labels.heading_tag",
+      "options": [
+        { "value": "h1", "label": "t:options.heading_tag.h1" },
+        { "value": "h2", "label": "t:options.heading_tag.h2" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:labels.text"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "t:labels.link_label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:labels.button_link"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:labels.layout",
+      "options": [
+        { "value": "rich-text--offset", "label": "t:options.layout.offset" },
+        { "value": "rich-text--center", "label": "t:options.layout.center" }
+      ],
+      "default": "rich-text--offset"
+    },
+    {
+      "type": "select",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "options": [
+        { "value": "scheme-light", "label": "t:options.color_scheme.light" },
+        { "value": "scheme-deep", "label": "t:options.color_scheme.deep" }
+      ],
+      "default": "scheme-light"
+    }
+  ],
+  "presets": [{ "name": "t:general.rich_text" }]
+}
+{% endschema %}

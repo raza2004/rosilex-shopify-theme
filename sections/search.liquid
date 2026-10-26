@@ -1,0 +1,167 @@
+{% comment %}
+  This section is used in the search template to render search results for
+  products, articles, and pages.
+
+  https://shopify.dev/docs/storefronts/themes/architecture/templates/search
+{% endcomment %}
+
+<div class="search page-section">
+  {%- assign page_title_text = 'search.title' | t -%}
+  {% render 'page-header', title: page_title_text, eyebrow: shop.name, badge: true, id: section.id %}
+
+  <form class="search__form" action="{{ routes.search_url }}" method="get" role="search" data-motion="up">
+    <div class="field search__field">
+      <label class="field__label" for="Search-{{ section.id }}">{{ 'search.label' | t }}</label>
+      <input
+        class="field__input search__input"
+        id="Search-{{ section.id }}"
+        type="search"
+        name="q"
+        value="{{ search.terms | escape }}"
+        placeholder="{{ 'search.placeholder' | t }}"
+        autocomplete="off"
+      >
+    </div>
+    <button type="submit" class="button button--primary" data-magnetic>{{ 'search.submit' | t }}</button>
+  </form>
+
+  {% if search.performed %}
+    {% if search.results_count == 0 %}
+      <p class="search__status text-muted" role="status" data-motion="up">
+        {{ 'search.no_results_html' | t: terms: search.terms }}
+      </p>
+    {% else %}
+      <p class="search__status eyebrow text-muted" role="status">
+        {{ 'search.results_for_html' | t: terms: search.terms, count: search.results_count }}
+      </p>
+
+      {% paginate search.results by 24 %}
+        <ul class="search__results" role="list" data-motion="rise">
+          {% for result in search.results %}
+            <li>
+              {% if result.object_type == 'product' %}
+                {% render 'product-card', product: result, sizes: '(min-width: 990px) 30vw, 50vw' %}
+              {% else %}
+                <a class="search-result" href="{{ result.url }}">
+                  <p class="eyebrow text-muted">
+                    {%- if result.object_type == 'article' -%}
+                      {{ 'search.type_article' | t }}
+                    {%- else -%}
+                      {{ 'search.type_page' | t }}
+                    {%- endif -%}
+                  </p>
+                  <h2 class="search-result__title">{{ result.title | escape }}</h2>
+                  {% if result.content != blank %}
+                    <p class="text-muted">{{ result.content | strip_html | truncatewords: 24 }}</p>
+                  {% endif %}
+                </a>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+
+        {% if paginate.pages > 1 %}
+          <nav class="search__pagination" aria-label="{{ 'collections.pagination_label' | t }}">
+            {% if paginate.previous %}
+              <a class="link-sweep" href="{{ paginate.previous.url }}">{{ 'collections.previous' | t }}</a>
+            {% else %}
+              <span></span>
+            {% endif %}
+            <p class="text-muted">
+              {{ 'collections.page_status' | t: current: paginate.current_page, total: paginate.pages }}
+            </p>
+            {% if paginate.next %}
+              <a class="link-sweep" href="{{ paginate.next.url }}">{{ 'collections.next' | t }}</a>
+            {% else %}
+              <span></span>
+            {% endif %}
+          </nav>
+        {% endif %}
+      {% endpaginate %}
+    {% endif %}
+  {% endif %}
+</div>
+
+{% stylesheet %}
+  .search__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+    margin-block-end: var(--space-2xl);
+  }
+
+  .search__field {
+    flex: 1;
+  }
+
+  .search__input {
+    font-family: var(--font-display--family);
+    font-size: var(--text-2xl);
+  }
+
+  .search__status {
+    margin-block-end: var(--space-xl);
+  }
+
+  .search__results {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-xl) var(--space-s);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .search-result {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    height: 100%;
+    padding: var(--space-l);
+    text-decoration: none;
+    background-color: var(--color-surface);
+    transition: background-color var(--duration-fast) var(--ease-out);
+  }
+
+  .search-result:hover {
+    background-color: var(--color-border);
+  }
+
+  .search-result__title {
+    font-size: var(--text-xl);
+  }
+
+  .search__pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-block-start: var(--space-2xl);
+    padding-block-start: var(--space-l);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  @media screen and (min-width: 750px) {
+    .search__form {
+      flex-direction: row;
+      align-items: flex-end;
+    }
+  }
+
+  @media screen and (min-width: 990px) {
+    .search__results {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-2xl) var(--space-l);
+    }
+
+    .search__results > :nth-child(3n + 2) {
+      margin-block-start: var(--space-2xl);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.search",
+  "settings": []
+}
+{% endschema %}

@@ -1,0 +1,133 @@
+{% comment %}
+  Numbered information columns (for shipping, care, values). Columns sit on a
+  staggered baseline instead of a uniform grid and rise in as they scroll in.
+{% endcomment %}
+
+<div class="info-columns {{ section.settings.color_scheme }}">
+  <div class="info-columns__intro">
+    {% if section.settings.eyebrow != blank %}
+      <p class="eyebrow text-muted" data-motion="up">{{ section.settings.eyebrow | escape }}</p>
+    {% endif %}
+    {% if section.settings.heading != blank %}
+      <h2 class="info-columns__heading" data-motion="lines">{{ section.settings.heading }}</h2>
+    {% endif %}
+  </div>
+
+  <ol class="info-columns__list" role="list" data-motion="rise">
+    {% for block in section.blocks %}
+      <li class="info-column" {{ block.shopify_attributes }}>
+        <span class="info-column__index eyebrow text-muted">{{ forloop.index | prepend: '0' }}</span>
+        <h3 class="info-column__title">{{ block.settings.title | escape }}</h3>
+        <div class="info-column__text rte text-muted">{{ block.settings.text }}</div>
+      </li>
+    {% endfor %}
+  </ol>
+</div>
+
+{% stylesheet %}
+  .info-columns {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xl);
+    padding-block: var(--space-section);
+  }
+
+  .info-columns__intro {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+    max-width: 40rem;
+  }
+
+  .info-columns__heading {
+    font-size: var(--text-2xl);
+  }
+
+  .info-columns__list {
+    display: grid;
+    gap: var(--space-xl);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .info-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+    padding-block-start: var(--space-m);
+    border-block-start: 1px solid var(--color-metal);
+  }
+
+  .info-column__title {
+    font-size: var(--text-xl);
+  }
+
+  @media screen and (min-width: 750px) {
+    .info-columns__list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-l);
+    }
+
+    .info-column:nth-child(3n + 2) {
+      margin-block-start: var(--space-2xl);
+    }
+
+    .info-column:nth-child(3n + 3) {
+      margin-block-start: var(--space-xl);
+    }
+
+    .info-columns__heading {
+      font-size: var(--text-3xl);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.info_columns",
+  "tag": "section",
+  "class": "info-columns-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:labels.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:labels.headline"
+    },
+    {
+      "type": "select",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "options": [
+        { "value": "scheme-light", "label": "t:options.color_scheme.light" },
+        { "value": "scheme-deep", "label": "t:options.color_scheme.deep" }
+      ],
+      "default": "scheme-light"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "column",
+      "name": "t:general.column",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "t:labels.title"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "t:labels.text"
+        }
+      ]
+    }
+  ],
+  "presets": [{ "name": "t:general.info_columns" }]
+}
+{% endschema %}

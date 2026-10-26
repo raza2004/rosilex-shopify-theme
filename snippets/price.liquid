@@ -1,0 +1,51 @@
+{% doc %}
+  Renders a price, with the compare at price struck through when on sale.
+
+  Pass a variant to show that variant's price. Pass only a product to show
+  the product's price, prefixed with "From" when variant prices differ.
+  Renders a placeholder price when neither is given.
+
+  @param {variant} [variant] - The variant whose price is shown
+  @param {product} [product] - The product, used when no variant is given
+
+  @example
+  {% render 'price', variant: product.selected_or_first_available_variant %}
+  {% render 'price', product: product %}
+{% enddoc %}
+
+{% liquid
+  if variant
+    assign price = variant.price
+    assign compare_at_price = variant.compare_at_price
+    assign price_varies = false
+  elsif product
+    assign price = product.price
+    assign compare_at_price = product.compare_at_price
+    assign price_varies = product.price_varies
+  else
+    assign price = 1900
+    assign compare_at_price = 0
+    assign price_varies = false
+  endif
+%}
+
+<span class="price">
+  {%- if compare_at_price > price -%}
+    <span class="visually-hidden">{{ 'products.sale_price' | t }}</span>
+    {{ price | money }}
+    <span class="visually-hidden">{{ 'products.regular_price' | t }}</span>
+    <s class="price__compare">{{ compare_at_price | money }}</s>
+  {%- elsif price_varies -%}
+    {%- assign formatted_price = price | money -%}
+    {{ 'products.price_from' | t: price: formatted_price }}
+  {%- else -%}
+    {{ price | money }}
+  {%- endif -%}
+</span>
+
+{% stylesheet %}
+  .price__compare {
+    margin-inline-start: var(--space-3xs);
+    color: var(--color-muted);
+  }
+{% endstylesheet %}

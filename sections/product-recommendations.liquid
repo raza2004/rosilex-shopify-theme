@@ -1,0 +1,170 @@
+{% comment %}
+  "Complete your routine": complementary products for the current product.
+
+  The recommendations object is only populated when this section is rendered
+  through the /recommendations/products endpoint, so the page first renders
+  an empty shell and JS fetches the filled version when it nears the viewport.
+  Complementary products are configured per product in the Shopify Search &
+  Discovery app. If none are set, the section stays hidden.
+{% endcomment %}
+
+{% if product %}
+  <product-recommendations
+    class="recommendations"
+    data-url="{{ routes.product_recommendations_url }}?product_id={{ product.id }}&section_id={{ section.id }}&limit={{ section.settings.limit }}&intent=complementary"
+  >
+    {% if recommendations.performed and recommendations.products_count > 0 %}
+      {% liquid
+        # Blank text settings fall back to the translated default copy in the locale files
+        assign default_eyebrow = 'sections.product_recommendations.eyebrow' | t
+        assign default_headline = 'sections.product_recommendations.headline_html' | t
+        assign eyebrow = section.settings.eyebrow | default: default_eyebrow
+        assign headline = section.settings.headline | default: default_headline
+      %}
+      <div class="recommendations__header">
+        <p class="eyebrow">{{ eyebrow | escape }}</p>
+        <h2 data-motion="lines">{{ headline }}</h2>
+      </div>
+
+      <ul class="recommendations__list" role="list" data-motion="rise">
+        {% for recommendation in recommendations.products %}
+          <li class="recommendations__item">
+            {% render 'product-card', product: recommendation, sizes: '(min-width: 750px) 25vw, 70vw' %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </product-recommendations>
+{% endif %}
+
+{% stylesheet %}
+  .recommendations {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+  }
+
+  .recommendations:has(.recommendations__list) {
+    padding-block: var(--space-section);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .recommendations__header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+  }
+
+  /* Mobile: swipeable row. Desktop: a staggered row, not a uniform grid. */
+  .recommendations__list {
+    display: flex;
+    gap: var(--space-s);
+    margin: 0;
+    padding: 0;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    list-style: none;
+  }
+
+  .recommendations__item {
+    flex: 0 0 70%;
+    scroll-snap-align: start;
+  }
+
+  @media screen and (min-width: 750px) {
+    .recommendations__list {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--space-l);
+      overflow: visible;
+    }
+
+    .recommendations__item:nth-child(even) {
+      margin-block-start: var(--space-2xl);
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  class ProductRecommendations extends HTMLElement {
+    connectedCallback() {
+      this.observer = new IntersectionObserver(
+        (entries) => {
+          if (!entries[0].isIntersecting) return;
+
+          this.observer.disconnect();
+          this.load();
+        },
+        { rootMargin: '0px 0px 400px 0px' }
+      );
+      this.observer.observe(this);
+    }
+
+    disconnectedCallback() {
+      this.observer?.disconnect();
+      window.Motion?.revert(this);
+    }
+
+    async load() {
+      try {
+        const response = await fetch(this.dataset.url);
+        const html = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const next = html.querySelector('product-recommendations');
+
+        if (!next || !next.innerHTML.trim()) {
+          this.closest('.shopify-section')?.setAttribute('hidden', '');
+          return;
+        }
+
+        this.innerHTML = next.innerHTML;
+        window.Motion?.init(this);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  }
+
+  if (!customElements.get('product-recommendations')) {
+    customElements.define('product-recommendations', ProductRecommendations);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:general.product_recommendations",
+  "tag": "section",
+  "class": "product-recommendations-section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:labels.eyebrow",
+      "info": "t:info.locale_default"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "t:labels.headline",
+      "info": "t:info.locale_default"
+    },
+    {
+      "type": "range",
+      "id": "limit",
+      "label": "t:labels.products_to_show",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "default": 4
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.product_recommendations"
+    }
+  ]
+}
+{% endschema %}

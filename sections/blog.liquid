@@ -1,0 +1,170 @@
+{% comment %}
+  This section is used in the blog template to render the blog page listing all
+  articles within a blog. Articles alternate image left and right, each image
+  unmasking with a clip wipe and drifting with scroll.
+
+  https://shopify.dev/docs/storefronts/themes/architecture/templates/blog
+{% endcomment %}
+
+<div class="blog page-section">
+  {% render 'page-header', title: blog.title, eyebrow: shop.name, badge: true, id: section.id %}
+
+  {% paginate blog.articles by 6 %}
+    {% if blog.articles_count == 0 %}
+      <div class="blog__empty" data-motion="up">
+        <p class="blog__empty-text">{{ 'blog.empty' | t }}</p>
+        <a class="button button--primary" href="{{ routes.all_products_collection_url }}" data-magnetic>
+          {{- 'footer.all_products' | t -}}
+        </a>
+      </div>
+    {% endif %}
+
+    <ol class="blog__list" role="list">
+      {% for article in blog.articles %}
+        <li class="blog-card">
+          <a class="blog-card__media" href="{{ article.url }}" tabindex="-1" aria-hidden="true" data-motion="clip" data-parallax data-cursor="{{ 'blog.cursor_read' | t | escape }}">
+            {% if article.image %}
+              {{
+                article.image
+                | image_url: width: 1800
+                | image_tag:
+                  widths: '600, 900, 1200, 1800',
+                  sizes: '(min-width: 990px) 55vw, 100vw',
+                  loading: 'lazy',
+                  alt: ''
+              }}
+            {% else %}
+              {{ 'lifestyle-1' | placeholder_svg_tag: 'blog-card__placeholder' }}
+            {% endif %}
+          </a>
+
+          <div class="blog-card__copy" data-motion="rise">
+            <p class="eyebrow text-muted">
+              {%- assign date = article.published_at | time_tag: format: 'date' -%}
+              {{- 'blog.article_metadata_html' | t: date: date, author: article.author -}}
+            </p>
+            <h2 class="blog-card__title">
+              <a href="{{ article.url }}">{{ article.title | escape }}</a>
+            </h2>
+            {% if article.excerpt != blank %}
+              <div class="text-muted">{{ article.excerpt | strip_html | truncatewords: 32 }}</div>
+            {% endif %}
+            <a class="link-sweep" href="{{ article.url }}" aria-label="{{ 'blog.read_article' | t: title: article.title | escape }}">
+              {{- 'blog.read_more' | t -}}
+            </a>
+          </div>
+        </li>
+      {% endfor %}
+    </ol>
+
+    {% if paginate.pages > 1 %}
+      <nav class="blog__pagination" aria-label="{{ 'collections.pagination_label' | t }}">
+        {% if paginate.previous %}
+          <a class="link-sweep" href="{{ paginate.previous.url }}">{{ 'collections.previous' | t }}</a>
+        {% else %}
+          <span></span>
+        {% endif %}
+        <p class="text-muted">
+          {{ 'collections.page_status' | t: current: paginate.current_page, total: paginate.pages }}
+        </p>
+        {% if paginate.next %}
+          <a class="link-sweep" href="{{ paginate.next.url }}">{{ 'collections.next' | t }}</a>
+        {% else %}
+          <span></span>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% endpaginate %}
+</div>
+
+{% stylesheet %}
+  .blog__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-l);
+    padding-block: var(--space-2xl);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .blog__empty-text {
+    max-width: 30ch;
+    font-family: var(--font-display--family);
+    font-size: var(--text-2xl);
+    line-height: var(--leading-heading);
+  }
+
+  .blog__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xl);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .blog-card {
+    display: grid;
+    gap: var(--space-l);
+  }
+
+  .blog-card__media {
+    display: block;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background-color: var(--color-surface);
+  }
+
+  .blog-card__media img,
+  .blog-card__placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    fill: var(--color-border);
+  }
+
+  .blog-card__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-s);
+  }
+
+  .blog-card__title {
+    font-size: var(--text-2xl);
+  }
+
+  .blog-card__title a {
+    text-decoration: none;
+  }
+
+  .blog__pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-block-start: var(--space-3xl);
+    padding-block-start: var(--space-l);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  @media screen and (min-width: 990px) {
+    .blog-card {
+      grid-template-columns: 7fr 5fr;
+      align-items: center;
+      gap: var(--space-2xl);
+    }
+
+    /* Every other article flips: copy left, image right, sitting lower. */
+    .blog-card:nth-child(even) .blog-card__media {
+      order: 2;
+      margin-block-start: var(--space-3xl);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.blog",
+  "settings": []
+}
+{% endschema %}

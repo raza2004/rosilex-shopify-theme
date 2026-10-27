@@ -51,7 +51,12 @@
   assign endpoint = section.settings.worker_url | strip
   if endpoint != blank
     unless endpoint contains '/recommend'
-      assign endpoint = endpoint | remove_last: '/' | append: '/recommend'
+      # remove_last drops the last "/" anywhere (even in "https://"), so only use it on a trailing slash.
+      assign endpoint_last_char = endpoint | slice: -1
+      if endpoint_last_char == '/'
+        assign endpoint = endpoint | remove_last: '/'
+      endif
+      assign endpoint = endpoint | append: '/recommend'
     endunless
   endif
 %}
@@ -72,11 +77,11 @@
     class="skin-quiz {{ section.settings.color_scheme }} full-width"
     data-endpoint="{{ endpoint | escape }}"
     data-language="{{ quiz_language }}"
-    data-step-template="{{ 'quiz.step' | t: current: '#current', total: '#total' | escape }}"
-    data-error-text="{{ 'quiz.error' | t | escape }}"
-    data-rate-text="{{ 'quiz.rate_limited' | t | escape }}"
-    data-photo-invalid="{{ 'quiz.photo_invalid' | t | escape }}"
-    data-consent-required="{{ 'quiz.photo_consent_required' | t | escape }}"
+    data-step-template="{{ 'quiz.step' | t: current: '#current', total: '#total' }}"
+    data-error-text="{{ 'quiz.error' | t }}"
+    data-rate-text="{{ 'quiz.rate_limited' | t }}"
+    data-photo-invalid="{{ 'quiz.photo_invalid' | t }}"
+    data-consent-required="{{ 'quiz.photo_consent_required' | t }}"
   >
     <script type="application/json" data-quiz-products>
       [
@@ -422,6 +427,12 @@
     font-family: var(--font-display--family);
     font-size: var(--text-2xl);
     line-height: var(--leading-heading);
+  }
+
+  /* A legend sits outside the fieldset's flex flow, so the panel gap never reaches it. */
+  legend.skin-quiz__question-title {
+    padding: 0;
+    margin-block-end: var(--space-l);
   }
 
   .skin-quiz__options {

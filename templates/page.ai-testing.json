@@ -1,0 +1,12 @@
+{
+  "sections": {
+    "makeup": {
+      "type": "makeup-demo",
+      "settings": {
+        "api_url": "http://127.0.0.1:7860",
+        "color_scheme": "scheme-light"
+      }
+    }
+  },
+  "order": ["makeup"]
+}

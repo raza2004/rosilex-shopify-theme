@@ -1,0 +1,355 @@
+/* AI makeup demo (sections/makeup-demo.liquid) */
+
+.makeup-demo__inner {
+  display: grid;
+  gap: var(--space-xl);
+}
+
+.makeup-demo__intro {
+  display: grid;
+  gap: var(--space-s);
+  max-width: 44rem;
+}
+
+.makeup-demo__heading {
+  font-size: var(--text-3xl);
+}
+
+.makeup-demo__layout {
+  display: grid;
+  gap: var(--space-xl);
+}
+
+@media (min-width: 990px) {
+  .makeup-demo__layout {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    align-items: start;
+  }
+}
+
+/* Stage: drop zone, comparison and loading share one frame */
+
+.makeup-demo__stage {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  max-height: min(80svh, 46rem);
+  width: 100%;
+  background-color: var(--color-surface);
+  overflow: hidden;
+}
+
+.makeup-demo__drop {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-l);
+  border: 1px dashed var(--color-border);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.makeup-demo__drop:hover,
+.makeup-demo__drop.is-dragging,
+.makeup-demo__drop:focus-within {
+  border-color: var(--color-metal);
+}
+
+.makeup-demo__drop[hidden],
+.makeup-demo__compare[hidden],
+.makeup-demo__loading[hidden] {
+  display: none;
+}
+
+.makeup-demo__drop-text {
+  position: relative;
+  display: grid;
+  gap: var(--space-2xs);
+  max-width: 22rem;
+}
+
+.makeup-demo__drop-title {
+  font-family: var(--font-display--family);
+  font-size: var(--text-xl);
+}
+
+.makeup-demo__drop.has-photo .makeup-demo__drop-text {
+  display: none;
+}
+
+.makeup-demo__preview,
+.makeup-demo__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* Whole photo, never cropped. Before and after have the same size (the result is composited
+     onto the original), so they line up exactly under the slider. */
+  object-fit: contain;
+}
+
+.makeup-demo__compare {
+  position: absolute;
+  inset: 0;
+  --split: 50%;
+}
+
+.makeup-demo__img--after {
+  clip-path: inset(0 0 0 var(--split));
+}
+
+.makeup-demo__divider {
+  position: absolute;
+  inset-block: 0;
+  left: var(--split);
+  width: 1px;
+  background-color: var(--color-metal);
+  pointer-events: none;
+}
+
+.makeup-demo__handle {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--color-metal);
+  border-radius: 50%;
+  background-color: var(--color-background);
+  translate: -50% -50%;
+}
+
+.makeup-demo__handle::before,
+.makeup-demo__handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-block-start: 1px solid currentColor;
+  border-inline-start: 1px solid currentColor;
+}
+
+.makeup-demo__handle::before {
+  left: 0.8rem;
+  rotate: -45deg;
+  translate: 0 -50%;
+}
+
+.makeup-demo__handle::after {
+  right: 0.8rem;
+  rotate: 135deg;
+  translate: 0 -50%;
+}
+
+.makeup-demo__tag {
+  position: absolute;
+  top: var(--space-s);
+  padding: var(--space-3xs) var(--space-xs);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.makeup-demo__tag--before {
+  left: var(--space-s);
+}
+
+.makeup-demo__tag--after {
+  right: var(--space-s);
+}
+
+.makeup-demo__range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+}
+
+.makeup-demo__range:focus-visible + .makeup-demo__divider,
+.makeup-demo__compare:focus-within .makeup-demo__handle {
+  outline: 2px solid var(--color-metal);
+  outline-offset: 3px;
+}
+
+.makeup-demo__loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-s);
+  padding: var(--space-l);
+  background-color: color-mix(in srgb, var(--color-background) 78%, transparent);
+  text-align: center;
+}
+
+.makeup-demo__spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--color-border);
+  border-top-color: var(--color-metal);
+  border-radius: 50%;
+  animation: makeup-demo-spin 1s linear infinite;
+}
+
+@keyframes makeup-demo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Controls */
+
+.makeup-demo__controls {
+  display: grid;
+  gap: var(--space-l);
+}
+
+.makeup-demo__styles {
+  display: grid;
+  gap: var(--space-s);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.makeup-demo__styles legend {
+  padding: 0;
+  margin-block-end: var(--space-s);
+}
+
+
+
+
+
+
+.makeup-demo__products {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: var(--space-s);
+  max-height: 24rem;
+  padding: 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.makeup-demo__product-card {
+  display: grid;
+  gap: var(--space-2xs);
+  cursor: pointer;
+}
+
+.makeup-demo__product-image {
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background-color: var(--color-surface);
+  outline: 1px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color var(--duration-fast) var(--ease-out);
+}
+
+.makeup-demo__product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.makeup-demo__product-title {
+  font-size: var(--text-xs);
+  line-height: 1.3;
+}
+
+.makeup-demo__product:hover .makeup-demo__product-image {
+  outline-color: var(--color-border);
+}
+
+.makeup-demo__product input:checked + .makeup-demo__product-card .makeup-demo__product-image {
+  outline: 2px solid var(--color-metal);
+}
+
+.makeup-demo__product input:focus-visible + .makeup-demo__product-card .makeup-demo__product-image {
+  outline: 2px solid var(--color-metal);
+  outline-offset: 4px;
+}
+
+.makeup-demo__shade[hidden] {
+  display: none;
+}
+
+.makeup-demo__consent {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: flex-start;
+  font-size: var(--text-s);
+  cursor: pointer;
+}
+
+.makeup-demo__consent input {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-block-start: 0.15rem;
+  accent-color: var(--color-metal);
+}
+
+.makeup-demo__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-m);
+  align-items: center;
+}
+
+.makeup-demo__link {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-s);
+  cursor: pointer;
+}
+
+.makeup-demo__error {
+  padding: var(--space-s) var(--space-m);
+  border-inline-start: 2px solid var(--color-metal);
+  background-color: var(--color-surface);
+}
+
+.makeup-demo__error[hidden],
+.makeup-demo__result[hidden] {
+  display: none;
+}
+
+.makeup-demo__result {
+  display: grid;
+  gap: var(--space-2xs);
+  padding-block-start: var(--space-m);
+  border-block-start: 1px solid var(--color-border);
+}
+
+.makeup-demo__score {
+  font-family: var(--font-display--family);
+  font-size: var(--text-2xl);
+  line-height: var(--leading-heading);
+}
+
+.makeup-demo__engine,
+.makeup-demo__privacy {
+  font-size: var(--text-s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .makeup-demo__spinner {
+    animation-duration: 3s;
+  }
+}

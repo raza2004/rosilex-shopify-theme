@@ -17,3 +17,9 @@ _stock-images/*
 
 # The quiz Cloudflare Worker is deployed separately, never uploaded with the theme
 quiz-worker/*
+
+# The makeup demo API (Python) is deployed separately, never uploaded with the theme
+makeup-service/*
+
+# Visitor log of the AI try on service: private, never upload
+visitors.json

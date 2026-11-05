@@ -14,6 +14,10 @@
         const night = savedTheme ? savedTheme === 'night' : matchMedia('(prefers-color-scheme: dark)').matches;
         if (night) document.documentElement.dataset.theme = 'night';
       } catch (error) {}
+      // Start of this visit (browser tab session), sent with AI try ons as seconds on site.
+      try {
+        if (!sessionStorage.getItem('visit-start')) sessionStorage.setItem('visit-start', String(Date.now()));
+      } catch (error) {}
     </script>
 
     {% # Flags motion as allowed before first paint; motion.js clears it if it never loads. %}

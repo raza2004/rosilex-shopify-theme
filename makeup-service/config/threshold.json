@@ -1,0 +1,32 @@
+{
+  "threshold": 0.4175,
+  "method": "5th percentile of same person pair similarities",
+  "candidates": {
+    "genuine_p5": 0.4175,
+    "far_0.01": 0.1417,
+    "genuine_median": 0.6619,
+    "eer_threshold": 0.3002
+  },
+  "far_target": 0.01,
+  "far_measured": 0.0,
+  "same_person_pass_rate": 0.931,
+  "eer": 0.0,
+  "eer_threshold": 0.3002,
+  "people": 12,
+  "photos": 32,
+  "skipped_photos": 4,
+  "genuine_pairs": 29,
+  "impostor_pairs": 467,
+  "genuine": {
+    "mean": 0.6489,
+    "min": 0.3002,
+    "max": 0.8008
+  },
+  "impostor": {
+    "mean": 0.0009,
+    "min": -0.1645,
+    "max": 0.1756
+  },
+  "model": "insightface buffalo_l (w600k_r50), cosine similarity of normed embeddings",
+  "calibrated_at": "2026-11-05T10:50:21+00:00"
+}

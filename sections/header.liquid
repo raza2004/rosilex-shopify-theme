@@ -13,12 +13,26 @@
   if menu == blank
     assign menu = linklists['main-menu']
   endif
+
+  # Built-in link to the AI testing page, unless the menu already links to it
+  assign show_ai_testing = section.settings.show_ai_testing
+  for link in menu.links
+    if link.url contains 'ai-testing'
+      assign show_ai_testing = false
+    endif
+  endfor
+  assign on_ai_testing = false
+  if template.suffix == 'ai-testing' or page.handle == 'ai-testing'
+    assign on_ai_testing = true
+  endif
 %}
+{%- capture ai_testing_url -%}{% render 'page-url', handle: 'ai-testing' %}{%- endcapture -%}
+{%- assign ai_testing_url = ai_testing_url | strip -%}
 
 <header class="site-header">
   <a class="site-header__logo" href="{{ routes.root_url }}">{{ shop.name | escape }}</a>
 
-  {% if menu.links.size > 0 %}
+  {% if menu.links.size > 0 or show_ai_testing %}
     <nav class="site-header__nav" aria-label="{{ 'general.main_menu' | t }}">
       <ul class="site-header__menu" role="list">
         {% for link in menu.links %}
@@ -26,7 +40,7 @@
             <a
               class="site-header__link"
               href="{{ link.url }}"
-              {% if link.active %}
+              {% if link.active and on_ai_testing == false %}
                 aria-current="page"
               {% endif %}
             >
@@ -34,6 +48,19 @@
             </a>
           </li>
         {% endfor %}
+        {% if show_ai_testing %}
+          <li>
+            <a
+              class="site-header__link"
+              href="{{ ai_testing_url }}"
+              {% if on_ai_testing %}
+                aria-current="page"
+              {% endif %}
+            >
+              {{- 'general.ai_testing' | t -}}
+            </a>
+          </li>
+        {% endif %}
       </ul>
     </nav>
   {% endif %}
@@ -83,7 +110,7 @@
     </button>
   </div>
 
-  {% if menu.links.size > 0 %}
+  {% if menu.links.size > 0 or show_ai_testing %}
     <nav aria-label="{{ 'general.main_menu' | t }}">
       <ul class="mobile-menu__links" role="list">
         {% for link in menu.links %}
@@ -91,7 +118,7 @@
             <a
               class="mobile-menu__link"
               href="{{ link.url }}"
-              {% if link.active %}
+              {% if link.active and on_ai_testing == false %}
                 aria-current="page"
               {% endif %}
             >
@@ -99,6 +126,19 @@
             </a>
           </li>
         {% endfor %}
+        {% if show_ai_testing %}
+          <li class="mobile-menu__item">
+            <a
+              class="mobile-menu__link"
+              href="{{ ai_testing_url }}"
+              {% if on_ai_testing %}
+                aria-current="page"
+              {% endif %}
+            >
+              {{- 'general.ai_testing' | t -}}
+            </a>
+          </li>
+        {% endif %}
         {% if shop.customer_accounts_enabled %}
           <li class="mobile-menu__item">
             <a class="mobile-menu__link" href="{{ routes.account_url }}">{{ 'general.account' | t }}</a>
@@ -461,6 +501,13 @@
       "type": "link_list",
       "id": "menu",
       "label": "t:labels.menu"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_ai_testing",
+      "label": "t:labels.show_ai_testing",
+      "info": "t:info.show_ai_testing",
+      "default": true
     }
   ]
 }

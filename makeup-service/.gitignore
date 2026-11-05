@@ -1,0 +1,27 @@
+# Secrets and keys
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+__pycache__/
+.pytest_cache/
+# Model and data files (downloaded during the Docker build)
+models/
+*.onnx
+*.mmdb
+geo/
+
+# Evaluation inputs are photos of people (the LFW dataset): keep them out of git unless you have the right to publish them.
+eval/faces/*
+!eval/faces/README.md
+# AI-edited photos of those people: generated outputs, cached API results and the worst case images.
+eval/results/outputs/
+eval/results/cache/
+eval/results/worst/
+
+# Owner debugging output: photos and raw model results, never commit
+debug/
+# Which public figure each person_NN is (private key for the anonymised results)
+eval/results/people_map.csv

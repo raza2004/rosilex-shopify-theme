@@ -1,0 +1,14 @@
+engine,image,person,style,mode,score,pass,attempts,api_calls,cache_hits,detection_failures,generation_failures,threshold,seconds,output,note
+openai,person_01/person_01_0001.jpg,person_01,soft_glam,single,0.560292,1,1,1,0,0,0,0.4175,19.4,outputs/openai/person_01__person_01_0001__soft_glam__single.png,
+openai,person_02/person_02_0001.jpg,person_02,soft_glam,single,,0,1,1,0,0,1,0.4175,19.3,,OpenAI HTTP 400
+openai,person_03/person_03_0001.jpg,person_03,soft_glam,single,0.709335,1,1,1,0,0,0,0.4175,16.3,outputs/openai/person_03__person_03_0001__soft_glam__single.png,
+openai,person_04/person_04_0001.jpg,person_04,soft_glam,single,0.136911,0,1,1,0,0,0,0.4175,17.4,outputs/openai/person_04__person_04_0001__soft_glam__single.png,
+openai,person_05/person_05_0002.jpg,person_05,soft_glam,single,0.48388,1,1,1,0,0,0,0.4175,16.5,outputs/openai/person_05__person_05_0002__soft_glam__single.png,
+openai,person_06/person_06_0001.jpg,person_06,soft_glam,single,0.611897,1,1,1,0,0,0,0.4175,18.2,outputs/openai/person_06__person_06_0001__soft_glam__single.png,
+openai,person_07/person_07_0002.jpg,person_07,soft_glam,single,0.365485,0,1,1,0,0,0,0.4175,20.5,outputs/openai/person_07__person_07_0002__soft_glam__single.png,
+openai,person_08/person_08_0001.jpg,person_08,soft_glam,single,0.675758,1,1,1,0,0,0,0.4175,19.8,outputs/openai/person_08__person_08_0001__soft_glam__single.png,
+openai,person_09/person_09_0001.jpg,person_09,soft_glam,single,0.215225,0,1,1,0,0,0,0.4175,19.7,outputs/openai/person_09__person_09_0001__soft_glam__single.png,
+openai,person_10/person_10_0001.jpg,person_10,soft_glam,single,0.33424,0,1,1,0,0,0,0.4175,20.1,outputs/openai/person_10__person_10_0001__soft_glam__single.png,
+openai,person_04/person_04_0001.jpg,person_04,soft_glam,retry,0.302602,0,3,2,1,0,0,0.4175,41.9,outputs/openai/person_04__person_04_0001__soft_glam__retry.png,
+openai,person_07/person_07_0002.jpg,person_07,soft_glam,retry,0.511215,1,2,1,1,0,0,0.4175,22.1,outputs/openai/person_07__person_07_0002__soft_glam__retry.png,
+openai,person_09/person_09_0001.jpg,person_09,soft_glam,retry,0.215225,0,2,1,1,0,0,0.4175,18.5,outputs/openai/person_09__person_09_0001__soft_glam__retry.png,

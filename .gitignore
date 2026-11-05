@@ -23,3 +23,6 @@ release
 
 # Cloudflare Wrangler local state
 .wrangler/
+
+# Visitor log of the AI try on service (IPs, locations, usage): private, never commit
+visitors.json

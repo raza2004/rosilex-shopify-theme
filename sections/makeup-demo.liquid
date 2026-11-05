@@ -1,0 +1,249 @@
+{% comment %}
+  AI product try on. The visitor uploads a photo and picks a product from the chosen
+  collection; the makeup service (makeup-service/) applies only that product, composites it
+  onto the original photo and measures with InsightFace how closely the result still matches
+  the original face. Behaviour lives in assets/makeup-demo.js, styles in assets/makeup-demo.css.
+  The photo is sent only after the visitor ticks the consent box.
+{% endcomment %}
+
+{% liquid
+  assign api_base = section.settings.api_url | strip
+  if api_base != blank
+    assign api_last_char = api_base | slice: -1
+    if api_last_char == '/'
+      assign api_base = api_base | remove_last: '/'
+    endif
+  endif
+
+  assign default_eyebrow = 'makeup.eyebrow' | t
+  assign default_heading = 'makeup.heading_html' | t
+  assign default_text = 'makeup.text_html' | t
+  assign eyebrow = section.settings.eyebrow | default: default_eyebrow
+  assign heading = section.settings.heading | default: default_heading
+  assign text = section.settings.text | default: default_text
+
+  assign source_collection = section.settings.collection | default: collections.all
+  assign products = source_collection.products | reject: 'gift_card?'
+%}
+
+{{ 'makeup-demo.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'makeup-demo.js' | asset_url }}" defer></script>
+
+{% if api_base == blank %}
+  {% if request.design_mode %}
+    <div class="page-width page-section">
+      <p class="text-muted">{{ 'makeup.setup_api' | t }}</p>
+    </div>
+  {% endif %}
+{% else %}
+  <makeup-demo
+    class="makeup-demo {{ section.settings.color_scheme }} page-section"
+    data-api="{{ api_base | escape }}"
+    data-max-bytes="8388608"
+    data-msg-generic="{{ 'makeup.error_generic' | t }}"
+    data-msg-network="{{ 'makeup.error_network' | t }}"
+    data-msg-file-type="{{ 'makeup.error_file_type' | t }}"
+    data-msg-file-size="{{ 'makeup.error_file_size' | t }}"
+    data-msg-no-face="{{ 'makeup.error_no_face' | t }}"
+    data-msg-multiple-faces="{{ 'makeup.error_multiple_faces' | t }}"
+    data-msg-rate-limited="{{ 'makeup.error_rate_limited' | t }}"
+    data-msg-daily-limit="{{ 'makeup.error_daily_limit' | t }}"
+    data-msg-tries-left="{{ 'makeup.tries_left' | t: count: '#count' }}"
+    data-msg-busy="{{ 'makeup.error_busy' | t }}"
+    data-msg-choose-photo="{{ 'makeup.error_choose_photo' | t }}"
+    data-msg-choose-product="{{ 'makeup.error_choose_product' | t }}"
+    data-msg-consent="{{ 'makeup.error_consent' | t }}"
+    data-msg-passed="{{ 'makeup.score_passed' | t: score: '#score' }}"
+    data-msg-failed="{{ 'makeup.score_failed' | t: score: '#score', threshold: '#threshold' }}"
+    data-msg-no-face-result="{{ 'makeup.score_no_face' | t }}"
+    data-msg-attempts="{{ 'makeup.attempts' | t: count: '#count', max: '#max' }}"
+    data-msg-threshold="{{ 'makeup.threshold_note' | t: threshold: '#threshold' }}"
+    data-msg-engine-openai="{{ 'makeup.engine_openai' | t }}"
+    data-msg-engine-gemini="{{ 'makeup.engine_gemini' | t }}"
+  >
+    <div class="makeup-demo__inner page-width">
+      <header class="makeup-demo__intro">
+        <p class="eyebrow">{{ eyebrow | escape }}</p>
+        <h2 class="makeup-demo__heading" data-motion="lines">{{ heading }}</h2>
+        <div class="makeup-demo__lead text-muted">{{ text }}</div>
+      </header>
+
+      <form class="makeup-demo__layout" data-form novalidate>
+        <div class="makeup-demo__stage">
+          <label class="makeup-demo__drop" data-drop>
+            <input
+              class="visually-hidden"
+              type="file"
+              name="image"
+              accept="image/jpeg,image/png,image/webp"
+              data-file
+            >
+            <img class="makeup-demo__preview" alt="" width="800" height="1000" data-preview hidden>
+            <span class="makeup-demo__drop-text" data-drop-text>
+              <span class="makeup-demo__drop-title">{{ 'makeup.upload_label' | t }}</span>
+              <span class="text-muted">{{ 'makeup.upload_hint' | t }}</span>
+            </span>
+          </label>
+
+          <div class="makeup-demo__compare" data-compare hidden>
+            <img class="makeup-demo__img" alt="{{ 'makeup.before' | t }}" width="800" height="1000" data-before>
+            <img class="makeup-demo__img makeup-demo__img--after" alt="{{ 'makeup.after' | t }}" width="800" height="1000" data-after>
+            <span class="makeup-demo__divider" aria-hidden="true"><span class="makeup-demo__handle"></span></span>
+            <span class="makeup-demo__tag makeup-demo__tag--before" aria-hidden="true">{{ 'makeup.before' | t }}</span>
+            <span class="makeup-demo__tag makeup-demo__tag--after" aria-hidden="true">{{ 'makeup.after' | t }}</span>
+            <input
+              class="makeup-demo__range"
+              type="range"
+              min="0"
+              max="100"
+              value="50"
+              aria-label="{{ 'makeup.slider_label' | t }}"
+              data-slider
+            >
+          </div>
+
+          <div class="makeup-demo__loading" data-loading hidden>
+            <span class="makeup-demo__spinner" aria-hidden="true"></span>
+            <p role="status">{{ 'makeup.loading' | t }}</p>
+          </div>
+        </div>
+
+        <div class="makeup-demo__controls">
+          <fieldset class="makeup-demo__styles">
+            <legend class="eyebrow">{{ 'makeup.product_label' | t }}</legend>
+            {% if products.size > 0 %}
+              <div class="makeup-demo__products" data-lenis-prevent>
+                {% for product in products limit: 24 %}
+                  <label class="makeup-demo__product">
+                    <input class="visually-hidden" type="radio" name="product" value="{{ product.handle | escape }}">
+                    <span class="makeup-demo__product-card">
+                      <span class="makeup-demo__product-image">
+                        {% if product.featured_image %}
+                          {{
+                            product.featured_image
+                            | image_url: width: 240
+                            | image_tag: loading: 'lazy', sizes: '80px', widths: '120, 240', alt: ''
+                          }}
+                        {% endif %}
+                      </span>
+                      <span class="makeup-demo__product-title">{{ product.title | escape }}</span>
+                    </span>
+                  </label>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-muted">{{ 'makeup.no_products' | t }}</p>
+            {% endif %}
+          </fieldset>
+
+          <div class="field makeup-demo__shade" data-shade-field hidden>
+            <label class="field__label" for="Shade-{{ section.id }}">{{ 'makeup.shade_label' | t }}</label>
+            <select class="field__input" id="Shade-{{ section.id }}" data-shade></select>
+          </div>
+
+          <script type="application/json" data-products>
+            {
+              {%- for product in products limit: 24 -%}
+                {%- capture description -%}{{ product.description | strip_html | strip_newlines | truncate: 600 }}{%- endcapture -%}
+                {{ product.handle | json }}: {
+                  "title": {{ product.title | json }},
+                  "vendor": {{ product.vendor | json }},
+                  "type": {{ product.type | json }},
+                  "description": {{ description | json }},
+                  "tags": {{ product.tags | json }},
+                  "shades": [
+                    {%- unless product.has_only_default_variant -%}
+                      {%- for variant in product.variants -%}
+                        {{ variant.title | json }}{% unless forloop.last %},{% endunless %}
+                      {%- endfor -%}
+                    {%- endunless -%}
+                  ]
+                }{% unless forloop.last %},{% endunless %}
+              {%- endfor -%}
+            }
+          </script>
+
+          <label class="makeup-demo__consent">
+            <input type="checkbox" data-consent>
+            <span>{{ 'makeup.consent' | t }}</span>
+          </label>
+
+          <div class="makeup-demo__actions">
+            <button type="submit" class="button button--primary" data-submit data-magnetic>
+              {{- 'makeup.apply' | t -}}
+            </button>
+            <button type="button" class="makeup-demo__link link-sweep" data-change hidden>
+              {{- 'makeup.change_photo' | t -}}
+            </button>
+          </div>
+
+          <p class="makeup-demo__error" role="alert" data-error hidden></p>
+
+          <div class="makeup-demo__result" data-result hidden>
+            <p class="makeup-demo__score" aria-live="polite" data-score></p>
+            <p class="text-muted" data-attempts></p>
+            <p class="text-muted" data-tries-left hidden></p>
+            <p class="text-muted" data-threshold></p>
+            <p class="makeup-demo__engine text-muted" data-engine></p>
+            <a class="makeup-demo__link link-sweep" href="#" download="rosilex-makeup.png" data-download>
+              {{- 'makeup.download' | t -}}
+            </a>
+          </div>
+
+          <p class="makeup-demo__privacy text-muted">{{ 'makeup.privacy' | t }}</p>
+        </div>
+      </form>
+    </div>
+  </makeup-demo>
+{% endif %}
+
+{% schema %}
+{
+  "name": "t:general.makeup_demo",
+  "tag": "section",
+  "class": "makeup-demo-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "api_url",
+      "label": "t:labels.makeup_api_url",
+      "info": "t:info.makeup_api_url"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "t:labels.collection",
+      "info": "t:info.makeup_collection"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:labels.eyebrow",
+      "info": "t:info.locale_default"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:labels.headline",
+      "info": "t:info.locale_default"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:labels.text",
+      "info": "t:info.locale_default"
+    },
+    {
+      "type": "select",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "options": [
+        { "value": "scheme-light", "label": "t:options.color_scheme.light" },
+        { "value": "scheme-deep", "label": "t:options.color_scheme.deep" }
+      ],
+      "default": "scheme-light"
+    }
+  ],
+  "presets": [{ "name": "t:general.makeup_demo" }]
+}
+{% endschema %}
